@@ -5,7 +5,7 @@ import himanshuPhoto from "./assets/himanshu.jpg";
 import "./App.css";
 
 const academy = {
-  name: "Sithpragya Music Academy",
+  name: "Stithpragya Music Academy",
   tagline: "Learn • Practice • Perform",
   founder: "Mayank Soni",
   coFounder: "Himanshu Sharma",
@@ -242,7 +242,7 @@ const founderCards = [
     role: "Co-Founder",
     name: academy.coFounder,
     photo: himanshuPhoto,
-    bio: "Himanshu Sharma is a singer, guitarist, performer, and creative leader whose passion for music, stage performance, and artistic growth brings a dynamic identity to Sithpragya Music Academy. With strong experience in performance, creative presentation, leadership, event execution, and audience engagement, he plays an important role in shaping an academy culture that balances discipline with creativity. His vision is to help students grow not only as learners, but also as confident performers with strong expression, stage presence, and artistic personality.",
+    bio: "Himanshu Sharma is a singer, guitarist, performer, and creative leader whose passion for music, stage performance, and artistic growth brings a dynamic identity to Stithpragya Music Academy. With strong experience in performance, creative presentation, leadership, event execution, and audience engagement, he plays an important role in shaping an academy culture that balances discipline with creativity. His vision is to help students grow not only as learners, but also as confident performers with strong expression, stage presence, and artistic personality.",
     highlight: "Singer • Guitarist • Performer • Creative Leadership",
   },
 ];
@@ -259,7 +259,7 @@ const pages = [
   "admin-media",
 ];
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://stithpragya-backend.onrender.com";
 
 function App() {
   const [activePage, setActivePage] = useState("home");
@@ -779,7 +779,7 @@ Message: ${form.message}`;
               <div className="brand-logo-image-wrap">
                 {renderLogo(
                   "brand-logo-image",
-                  "Sithpragya Sangeet Sansthan Logo"
+                  "Stithpragya Sangeet Sansthan Logo"
                 )}
               </div>
 
@@ -841,7 +841,7 @@ Message: ${form.message}`;
                     {renderLogo("chip-logo-image", "Academy Logo")}
                     <div className="chip-text">
                       <small>Welcome To</small>
-                      <strong>Sithpragya Music Academy</strong>
+                      <strong>Stithpragya Music Academy</strong>
                     </div>
                   </div>
 
@@ -851,7 +851,7 @@ Message: ${form.message}`;
                   </h2>
 
                   <p>
-                    Sithpragya Music Academy provides structured training in
+                    Stithpragya Music Academy provides structured training in
                     music and dance for students who want to improve their
                     skills, creativity, and stage performance in a guided and
                     inspiring environment.
@@ -918,7 +918,7 @@ Message: ${form.message}`;
                     <img
                       className="hero-image"
                       src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80"
-                      alt="Sithpragya Music Academy showcase"
+                      alt="Stithpragya Music Academy showcase"
                     />
                     <div className="hero-image-overlay" />
                     <div className="hero-image-shine" />
@@ -1010,9 +1010,9 @@ Message: ${form.message}`;
             <section className="section reveal">
               <div className="section-head">
                 <span className="pill">About Academy</span>
-                <h2>About Sithpragya Music Academy</h2>
+                <h2>About Stithpragya Music Academy</h2>
                 <p>
-                  Sithpragya Music Academy is a place for students who want to
+                 Stithpragya Music Academy is a place for students who want to
                   learn music and dance with proper guidance, regular practice,
                   and performance-focused training.
                 </p>
@@ -1326,7 +1326,7 @@ Message: ${form.message}`;
             <section className="section reveal">
               <div className="section-head">
                 <span className="pill">Teacher Careers</span>
-                <h2>Join Sithpragya Music Academy as a Teacher</h2>
+                <h2>Join  Music Academy as a Teacher</h2>
                 <p>
                   We are looking for passionate, skilled, and dedicated teachers
                   who want to guide students in music, dance, and performance
@@ -1557,7 +1557,7 @@ Message: ${form.message}`;
                 <span className="pill">Contact</span>
                 <h2>Get course details and admission guidance</h2>
                 <p>
-                  Contact Sithpragya Music Academy for admissions, course
+                  Contact Stithpragya Music Academy for admissions, course
                   information, demo classes, and learning guidance.
                 </p>
               </div>
@@ -1567,7 +1567,7 @@ Message: ${form.message}`;
                   <div className="contact-card-glow" />
                   <div className="contact-inner">
                     <span className="contact-label">Get in touch</span>
-                    <h3>Sithpragya Music Academy</h3>
+                    <h3>Stithpragya Music Academy</h3>
                     <p className="contact-intro">
                       Reach out for class details, course guidance, or admission
                       support. We will help you choose the right program.
