@@ -20,6 +20,15 @@ const academy = {
     "https://youtube.com/@stithpragyasangeetsansthan7?si=fRNVZuZRQVW-o6ij",
 };
 
+const studentFormLink =
+  "https://docs.google.com/forms/d/e/1FAIpQLSfwE8vrdDvcn7r0vN2m5EEqw_zn3Bx0baZLeiPIDvCNBCAVWg/viewform?usp=dialog";
+
+const teacherFormLink =
+  "https://docs.google.com/forms/d/e/1FAIpQLSejeR3g7s_AT0TrYE7z8ijcN4Z8kGyEmkUe-GYoXvs_oH8R0A/viewform?usp=dialog";
+
+const studentSheetLink =
+  "https://docs.google.com/spreadsheets/d/1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w/edit?usp=sharing";
+
 const courses = [
   {
     icon: "🎤",
@@ -257,15 +266,13 @@ const pages = [
   "teachers",
   "contact",
   "admin-media",
+  "admin-portal",
 ];
 
 const API_BASE = "https://stithpragya-backend.onrender.com";
 
 function App() {
   const [activePage, setActivePage] = useState("home");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [teacherSkillDropdownOpen, setTeacherSkillDropdownOpen] =
-    useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successText, setSuccessText] = useState("Submitted Successfully");
@@ -274,23 +281,6 @@ function App() {
   const [logoBroken, setLogoBroken] = useState(false);
   const [mayankBroken, setMayankBroken] = useState(false);
   const [himanshuBroken, setHimanshuBroken] = useState(false);
-
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    course: "",
-    message: "",
-  });
-
-  const [teacherForm, setTeacherForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    skill: "",
-    experience: "",
-    message: "",
-  });
 
   const [mediaItems, setMediaItems] = useState([]);
   const [adminUnlocked, setAdminUnlocked] = useState(false);
@@ -301,8 +291,6 @@ function App() {
     url: "",
   });
 
-  const dropdownRef = useRef(null);
-  const teacherSkillDropdownRef = useRef(null);
   const navRef = useRef(null);
 
   useEffect(() => {
@@ -339,15 +327,6 @@ function App() {
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-      if (
-        teacherSkillDropdownRef.current &&
-        !teacherSkillDropdownRef.current.contains(e.target)
-      ) {
-        setTeacherSkillDropdownOpen(false);
-      }
       if (navRef.current && !navRef.current.contains(e.target)) {
         setMobileMenuOpen(false);
       }
@@ -355,8 +334,6 @@ function App() {
 
     const handleEscape = (e) => {
       if (e.key === "Escape") {
-        setDropdownOpen(false);
-        setTeacherSkillDropdownOpen(false);
         setMobileMenuOpen(false);
       }
     };
@@ -417,118 +394,14 @@ function App() {
 
   const enquiryText = useMemo(() => {
     return `Hello ${academy.name},
-Name: ${form.name}
-Email: ${form.email}
-Phone: ${form.phone}
-Course: ${form.course}
-Message: ${form.message}`;
-  }, [form]);
+I want to know more about courses and admissions.`;
+  }, []);
 
   const goToPage = (page) => {
     setActivePage(page);
-    setDropdownOpen(false);
-    setTeacherSkillDropdownOpen(false);
     setMobileMenuOpen(false);
     setShowSuccess(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (
-      !form.name ||
-      !form.email ||
-      !form.phone ||
-      !form.course ||
-      !form.message
-    ) {
-      alert("Please fill all fields before submitting.");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/send-enquiry`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Enquiry submit failed");
-      }
-
-      if (data?.success) {
-        setSuccessText("Enquiry Submitted Successfully");
-        setShowSuccess(true);
-        setForm({
-          name: "",
-          email: "",
-          phone: "",
-          course: "",
-          message: "",
-        });
-      } else {
-        alert(data?.message || "Failed to submit enquiry ❌");
-      }
-    } catch (err) {
-      console.log(err);
-      alert(err.message || "Server error ❌");
-    }
-  };
-
-  const handleTeacherSubmit = async (e) => {
-    e.preventDefault();
-
-    if (
-      !teacherForm.name ||
-      !teacherForm.email ||
-      !teacherForm.phone ||
-      !teacherForm.skill ||
-      !teacherForm.experience ||
-      !teacherForm.message
-    ) {
-      alert("Please fill all teacher application fields before submitting.");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/send-teacher`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(teacherForm),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Teacher submit failed");
-      }
-
-      if (data?.success) {
-        setSuccessText("Application Submitted Successfully");
-        setShowSuccess(true);
-        setTeacherForm({
-          name: "",
-          email: "",
-          phone: "",
-          skill: "",
-          experience: "",
-          message: "",
-        });
-      } else {
-        alert(data?.message || "Failed to submit application ❌");
-      }
-    } catch (err) {
-      console.log(err);
-      alert(err.message || "Server error ❌");
-    }
   };
 
   const verifyAdminPassword = async () => {
@@ -691,6 +564,7 @@ Message: ${form.message}`;
 
   const getPageLabel = (page) => {
     if (page === "admin-media") return "Admin Media";
+    if (page === "admin-portal") return "Admin Portal";
     return page.charAt(0).toUpperCase() + page.slice(1);
   };
 
@@ -802,17 +676,19 @@ Message: ${form.message}`;
           </button>
 
           <nav className={`nav-links ${mobileMenuOpen ? "open" : ""}`}>
-            {pages.map((page) => (
-              <button
-                key={page}
-                type="button"
-                className={`nav-btn ${activePage === page ? "active" : ""}`}
-                onClick={() => goToPage(page)}
-              >
-                <span>{getPageLabel(page)}</span>
-                <i className="nav-indicator" />
-              </button>
-            ))}
+            {pages
+              .filter((page) => page !== "admin-portal")
+              .map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  className={`nav-btn ${activePage === page ? "active" : ""}`}
+                  onClick={() => goToPage(page)}
+                >
+                  <span>{getPageLabel(page)}</span>
+                  <i className="nav-indicator" />
+                </button>
+              ))}
           </nav>
         </div>
       </header>
@@ -1012,7 +888,7 @@ Message: ${form.message}`;
                 <span className="pill">About Academy</span>
                 <h2>About Stithpragya Music Academy</h2>
                 <p>
-                 Stithpragya Music Academy is a place for students who want to
+                  Stithpragya Music Academy is a place for students who want to
                   learn music and dance with proper guidance, regular practice,
                   and performance-focused training.
                 </p>
@@ -1326,7 +1202,7 @@ Message: ${form.message}`;
             <section className="section reveal">
               <div className="section-head">
                 <span className="pill">Teacher Careers</span>
-                <h2>Join  Music Academy as a Teacher</h2>
+                <h2>Join Music Academy as a Teacher</h2>
                 <p>
                   We are looking for passionate, skilled, and dedicated teachers
                   who want to guide students in music, dance, and performance
@@ -1420,131 +1296,22 @@ Message: ${form.message}`;
                   <div className="contact-card-glow" />
                   <div className="contact-inner">
                     <span className="contact-label">Teacher Application</span>
-                    <h3>Apply Now</h3>
+                    <h3>Apply as Teacher</h3>
+                    <p className="contact-intro">
+                      Fill the official teacher application form to apply for
+                      teaching opportunities at Stithpragya Music Academy.
+                    </p>
 
-                    <form onSubmit={handleTeacherSubmit}>
-                      <input
-                        className="field"
-                        type="text"
-                        placeholder="Full Name"
-                        value={teacherForm.name}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            name: e.target.value,
-                          })
-                        }
-                      />
-
-                      <input
-                        className="field"
-                        type="email"
-                        placeholder="Email Address"
-                        value={teacherForm.email}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            email: e.target.value,
-                          })
-                        }
-                      />
-
-                      <input
-                        className="field"
-                        type="tel"
-                        placeholder="Phone Number"
-                        value={teacherForm.phone}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            phone: e.target.value,
-                          })
-                        }
-                      />
-
-                      <div
-                        className="custom-dropdown"
-                        ref={teacherSkillDropdownRef}
+                    <div className="contact-submit-row">
+                      <a
+                        href={teacherFormLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-gold"
                       >
-                        <button
-                          type="button"
-                          className={`dropdown-selected ${
-                            teacherSkillDropdownOpen ? "open" : ""
-                          }`}
-                          onClick={() =>
-                            setTeacherSkillDropdownOpen((prev) => !prev)
-                          }
-                        >
-                          <span>
-                            {teacherForm.skill || "Select Teaching Skill"}
-                          </span>
-                          <span className="arrow">⌄</span>
-                        </button>
-
-                        {teacherSkillDropdownOpen && (
-                          <div className="dropdown-menu">
-                            <button
-                              type="button"
-                              className="dropdown-item"
-                              onClick={() => {
-                                setTeacherForm({ ...teacherForm, skill: "" });
-                                setTeacherSkillDropdownOpen(false);
-                              }}
-                            >
-                              Select Teaching Skill
-                            </button>
-
-                            {courseOptions.map((item) => (
-                              <button
-                                type="button"
-                                key={item}
-                                className="dropdown-item"
-                                onClick={() => {
-                                  setTeacherForm({
-                                    ...teacherForm,
-                                    skill: item,
-                                  });
-                                  setTeacherSkillDropdownOpen(false);
-                                }}
-                              >
-                                {item}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <input
-                        className="field"
-                        type="text"
-                        placeholder="Experience (Example: 2 Years)"
-                        value={teacherForm.experience}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            experience: e.target.value,
-                          })
-                        }
-                      />
-
-                      <textarea
-                        className="field textarea"
-                        placeholder="Tell us about your teaching background, performance experience, and why you want to join"
-                        value={teacherForm.message}
-                        onChange={(e) =>
-                          setTeacherForm({
-                            ...teacherForm,
-                            message: e.target.value,
-                          })
-                        }
-                      />
-
-                      <div className="contact-submit-row">
-                        <button type="submit" className="btn btn-gold">
-                          Submit Application
-                        </button>
-                      </div>
-                    </form>
+                        Apply as Teacher
+                      </a>
+                    </div>
                   </div>
                 </article>
               </div>
@@ -1626,97 +1393,23 @@ Message: ${form.message}`;
                 <article className="contact-card reveal">
                   <div className="contact-card-glow" />
                   <div className="contact-inner">
-                    <span className="contact-label">Admission Enquiry</span>
-                    <h3>Send your enquiry</h3>
+                    <span className="contact-label">Admission Form</span>
+                    <h3>Apply for Admission</h3>
+                    <p className="contact-intro">
+                      Fill the official student admission form to enroll in your
+                      preferred course and learning mode.
+                    </p>
 
-                    <form onSubmit={handleSubmit}>
-                      <input
-                        className="field"
-                        type="text"
-                        placeholder="Your Name"
-                        value={form.name}
-                        onChange={(e) =>
-                          setForm({ ...form, name: e.target.value })
-                        }
-                      />
-
-                      <input
-                        className="field"
-                        type="email"
-                        placeholder="Email Address"
-                        value={form.email}
-                        onChange={(e) =>
-                          setForm({ ...form, email: e.target.value })
-                        }
-                      />
-
-                      <input
-                        className="field"
-                        type="tel"
-                        placeholder="Phone Number"
-                        value={form.phone}
-                        onChange={(e) =>
-                          setForm({ ...form, phone: e.target.value })
-                        }
-                      />
-
-                      <div className="custom-dropdown" ref={dropdownRef}>
-                        <button
-                          type="button"
-                          className={`dropdown-selected ${
-                            dropdownOpen ? "open" : ""
-                          }`}
-                          onClick={() => setDropdownOpen((prev) => !prev)}
-                        >
-                          <span>{form.course || "Select Course"}</span>
-                          <span className="arrow">⌄</span>
-                        </button>
-
-                        {dropdownOpen && (
-                          <div className="dropdown-menu">
-                            <button
-                              type="button"
-                              className="dropdown-item"
-                              onClick={() => {
-                                setForm({ ...form, course: "" });
-                                setDropdownOpen(false);
-                              }}
-                            >
-                              Select Course
-                            </button>
-
-                            {courseOptions.map((course) => (
-                              <button
-                                type="button"
-                                key={course}
-                                className="dropdown-item"
-                                onClick={() => {
-                                  setForm({ ...form, course });
-                                  setDropdownOpen(false);
-                                }}
-                              >
-                                {course}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <textarea
-                        className="field textarea"
-                        placeholder="Write your message"
-                        value={form.message}
-                        onChange={(e) =>
-                          setForm({ ...form, message: e.target.value })
-                        }
-                      />
-
-                      <div className="contact-submit-row">
-                        <button type="submit" className="btn btn-gold">
-                          Submit Enquiry
-                        </button>
-                      </div>
-                    </form>
+                    <div className="contact-submit-row">
+                      <a
+                        href={studentFormLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-gold"
+                      >
+                        Fill Student Form
+                      </a>
+                    </div>
                   </div>
                 </article>
               </div>
@@ -1870,6 +1563,99 @@ Message: ${form.message}`;
               )}
             </section>
           )}
+
+          {activePage === "admin-portal" && (
+            <section className="section reveal">
+              <div className="section-head">
+                <span className="pill">Hidden Admin Portal</span>
+                <h2>Stithpragya Control Dashboard</h2>
+                <p>
+                  This private portal is for managing student and teacher form
+                  access, records, and dashboard controls.
+                </p>
+              </div>
+
+              <div className="grid-2">
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Student Controls</h3>
+                  <div className="button-row">
+                    <a
+                      href={studentFormLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-gold"
+                    >
+                      Open Student Form
+                    </a>
+
+                    <a
+                      href={studentSheetLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-glass"
+                    >
+                      Open Student Sheet
+                    </a>
+                  </div>
+                </article>
+
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Teacher Controls</h3>
+                  <div className="button-row">
+                    <a
+                      href={teacherFormLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-gold"
+                    >
+                      Open Teacher Form
+                    </a>
+
+                    <a
+                      href="#"
+                      className="btn btn-glass"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        alert("Teacher sheet link add karna baki hai.");
+                      }}
+                    >
+                      Open Teacher Sheet
+                    </a>
+                  </div>
+                </article>
+              </div>
+
+              <div className="grid-3" style={{ marginTop: "24px" }}>
+                <article className="glass-card info-card panel-tilt reveal">
+                  <h3>Total Students</h3>
+                  <p>Dashboard stats Google Sheet link hone ke baad yahan show honge.</p>
+                </article>
+
+                <article className="glass-card info-card panel-tilt reveal">
+                  <h3>Total Teachers</h3>
+                  <p>Teacher application data link hone ke baad yahan show hoga.</p>
+                </article>
+
+                <article className="glass-card info-card panel-tilt reveal">
+                  <h3>Course Analytics</h3>
+                  <p>
+                    Participation in music field ke basis par course-wise count
+                    yahan dikhega.
+                  </p>
+                </article>
+              </div>
+
+              <div className="contact-submit-row" style={{ marginTop: "24px" }}>
+                <button
+                  type="button"
+                  className="btn btn-gold"
+                  onClick={() => goToPage("home")}
+                >
+                  Back to Website
+                </button>
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
@@ -1899,16 +1685,28 @@ Message: ${form.message}`;
           </div>
 
           <div className="footer-links">
-            {pages.map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => goToPage(page)}
-              >
-                {getPageLabel(page)}
-              </button>
-            ))}
+            {pages
+              .filter((page) => page !== "admin-portal")
+              .map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => goToPage(page)}
+                >
+                  {getPageLabel(page)}
+                </button>
+              ))}
           </div>
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: "10px" }}>
+          <button
+            type="button"
+            className="btn btn-glass small"
+            onClick={() => goToPage("admin-portal")}
+          >
+            Open Hidden Portal
+          </button>
         </div>
       </footer>
     </div>
