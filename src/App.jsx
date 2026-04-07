@@ -420,7 +420,10 @@ I want to know more about courses and admissions.`;
   }, []);
 
   const goToPage = (page) => {
-    if ((page === "admin-media" || page === "admin-portal") && !hiddenPortalUnlocked) {
+    if (
+      (page === "admin-media" || page === "admin-portal") &&
+      !hiddenPortalUnlocked
+    ) {
       alert("Access denied");
       return;
     }
@@ -542,6 +545,8 @@ I want to know more about courses and admissions.`;
       title: "",
       url: "",
     });
+    setActivePage("admin-portal");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const addMediaItem = async (e) => {
@@ -1564,6 +1569,14 @@ I want to know more about courses and admissions.`;
                         >
                           Open Admin Portal
                         </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-glass"
+                          onClick={lockAdminPortal}
+                        >
+                          Back to Hidden Portal
+                        </button>
                       </div>
                     </div>
                   </article>
@@ -1684,7 +1697,7 @@ I want to know more about courses and admissions.`;
                 <h2>Stithpragya Control Dashboard</h2>
                 <p>
                   This private portal is for managing student forms, teacher
-                  forms, sheets, and media controls.
+                  forms, sheets, media controls, and dashboard analytics.
                 </p>
               </div>
 
@@ -1759,8 +1772,8 @@ I want to know more about courses and admissions.`;
                   <h3>Dashboard Overview</h3>
                   <p>
                     Student aur teacher sheet linked hai. Next step me yahin par
-                    total students, total teachers, course-wise count, aur
-                    mode-wise stats show karenge.
+                    total students, total teachers, course-wise count, mode-wise
+                    count, aur recent submissions show karenge.
                   </p>
                 </article>
               </div>
@@ -1768,20 +1781,80 @@ I want to know more about courses and admissions.`;
               <div className="grid-3" style={{ marginTop: "24px" }}>
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Total Students</h3>
-                  <p>Student sheet se analytics yahan show honge.</p>
+                  <p>Student sheet analytics yahan show honge.</p>
                 </article>
 
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Total Teachers</h3>
-                  <p>Teacher sheet se analytics yahan show honge.</p>
+                  <p>Teacher sheet analytics yahan show honge.</p>
                 </article>
 
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Course Analytics</h3>
                   <p>
-                    Participation in music aur Apply for Mode ke basis par
-                    detailed stats yahan dikhenge.
+                    Student aur teacher course-wise participation yahan show
+                    hoga.
                   </p>
+                </article>
+              </div>
+
+              <div className="grid-2" style={{ marginTop: "24px" }}>
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Mode-wise Counts</h3>
+                  <p>
+                    Online, Offline aur Home Tuition ke counts yahan show honge.
+                  </p>
+
+                  <div className="feature-grid" style={{ marginTop: "18px" }}>
+                    <div className="feature-item">Online: Pending</div>
+                    <div className="feature-item">Offline: Pending</div>
+                    <div className="feature-item">Home Tuition: Pending</div>
+                  </div>
+                </article>
+
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Recent Student Submissions</h3>
+                  <p>
+                    Latest student form responses next phase me yahan show
+                    hongi.
+                  </p>
+
+                  <div className="feature-grid" style={{ marginTop: "18px" }}>
+                    <div className="feature-item">Recent Entry 1: Pending</div>
+                    <div className="feature-item">Recent Entry 2: Pending</div>
+                    <div className="feature-item">Recent Entry 3: Pending</div>
+                  </div>
+                </article>
+              </div>
+
+              <div className="grid-2" style={{ marginTop: "24px" }}>
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Recent Teacher Submissions</h3>
+                  <p>
+                    Latest teacher form responses next phase me yahan show
+                    hongi.
+                  </p>
+
+                  <div className="feature-grid" style={{ marginTop: "18px" }}>
+                    <div className="feature-item">Recent Entry 1: Pending</div>
+                    <div className="feature-item">Recent Entry 2: Pending</div>
+                    <div className="feature-item">Recent Entry 3: Pending</div>
+                  </div>
+                </article>
+
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Portal Status</h3>
+                  <p>
+                    Hidden portal unlocked hai. Forms, sheets aur media controls
+                    ab yahin se manage kiye ja sakte hain.
+                  </p>
+
+                  <div className="feature-grid" style={{ marginTop: "18px" }}>
+                    <div className="feature-item">Student Form Linked</div>
+                    <div className="feature-item">Teacher Form Linked</div>
+                    <div className="feature-item">Spreadsheet Linked</div>
+                    <div className="feature-item">Admin Media Protected</div>
+                  </div>
                 </article>
               </div>
 
