@@ -298,6 +298,11 @@ function App() {
   });
 
   const navRef = useRef(null);
+  const logoTapCountRef = useRef(0);
+  const logoTapTimerRef = useRef(null);
+  const himanshuTapCountRef = useRef(0);
+  const himanshuTapTimerRef = useRef(null);
+  const [logoTapUnlocked, setLogoTapUnlocked] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -398,12 +403,28 @@ function App() {
     return () => clearTimeout(timer);
   }, [showSuccess]);
 
+  useEffect(() => {
+    return () => {
+      if (logoTapTimerRef.current) {
+        clearTimeout(logoTapTimerRef.current);
+      }
+      if (himanshuTapTimerRef.current) {
+        clearTimeout(himanshuTapTimerRef.current);
+      }
+    };
+  }, []);
+
   const enquiryText = useMemo(() => {
     return `Hello ${academy.name},
 I want to know more about courses and admissions.`;
   }, []);
 
   const goToPage = (page) => {
+    if ((page === "admin-media" || page === "admin-portal") && !hiddenPortalUnlocked) {
+      alert("Access denied");
+      return;
+    }
+
     setActivePage(page);
     setMobileMenuOpen(false);
     setShowSuccess(false);
@@ -420,9 +441,52 @@ I want to know more about courses and admissions.`;
       setAdminPassword("");
       setActivePage("admin-portal");
       setMobileMenuOpen(false);
+      setLogoTapUnlocked(false);
+      logoTapCountRef.current = 0;
+      himanshuTapCountRef.current = 0;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       alert("Wrong hidden portal password");
+    }
+  };
+
+  const handleLogoSecretTap = () => {
+    logoTapCountRef.current += 1;
+
+    if (logoTapTimerRef.current) {
+      clearTimeout(logoTapTimerRef.current);
+    }
+
+    logoTapTimerRef.current = setTimeout(() => {
+      logoTapCountRef.current = 0;
+      himanshuTapCountRef.current = 0;
+      setLogoTapUnlocked(false);
+    }, 1800);
+
+    if (logoTapCountRef.current >= 5) {
+      logoTapCountRef.current = 0;
+      himanshuTapCountRef.current = 0;
+      setLogoTapUnlocked(true);
+    }
+  };
+
+  const handleHimanshuSecretTap = () => {
+    if (!logoTapUnlocked) return;
+
+    himanshuTapCountRef.current += 1;
+
+    if (himanshuTapTimerRef.current) {
+      clearTimeout(himanshuTapTimerRef.current);
+    }
+
+    himanshuTapTimerRef.current = setTimeout(() => {
+      himanshuTapCountRef.current = 0;
+    }, 1200);
+
+    if (himanshuTapCountRef.current >= 2) {
+      himanshuTapCountRef.current = 0;
+      setLogoTapUnlocked(false);
+      openHiddenPortal();
     }
   };
 
@@ -430,6 +494,9 @@ I want to know more about courses and admissions.`;
     setHiddenPortalUnlocked(false);
     setAdminUnlocked(false);
     setAdminPassword("");
+    setLogoTapUnlocked(false);
+    logoTapCountRef.current = 0;
+    himanshuTapCountRef.current = 0;
     setActivePage("home");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -631,6 +698,11 @@ I want to know more about courses and admissions.`;
         className={`founder-image ${
           index === 0 ? "mayank-photo" : "himanshu-photo"
         }`}
+        onClick={() => {
+          if (index === 1) {
+            handleHimanshuSecretTap();
+          }
+        }}
         onError={() => {
           if (index === 0) {
             setMayankBroken(true);
@@ -679,10 +751,13 @@ I want to know more about courses and admissions.`;
             className="brand-button"
             onClick={(e) => {
               if (e.shiftKey) {
+                e.preventDefault();
                 openHiddenPortal();
-              } else {
-                goToPage("home");
+                return;
               }
+
+              handleLogoSecretTap();
+              goToPage("home");
             }}
           >
             <div className="brand">
