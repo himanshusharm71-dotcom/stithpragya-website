@@ -29,6 +29,11 @@ const teacherFormLink =
 const studentSheetLink =
   "https://docs.google.com/spreadsheets/d/1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w/edit?usp=sharing";
 
+const teacherSheetLink =
+  "https://docs.google.com/spreadsheets/d/1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w/edit?usp=sharing";
+
+const HIDDEN_PORTAL_PASSWORD = "stith123";
+
 const courses = [
   {
     icon: "🎤",
@@ -281,6 +286,7 @@ function App() {
   const [logoBroken, setLogoBroken] = useState(false);
   const [mayankBroken, setMayankBroken] = useState(false);
   const [himanshuBroken, setHimanshuBroken] = useState(false);
+  const [hiddenPortalUnlocked, setHiddenPortalUnlocked] = useState(false);
 
   const [mediaItems, setMediaItems] = useState([]);
   const [adminUnlocked, setAdminUnlocked] = useState(false);
@@ -323,7 +329,7 @@ function App() {
       elements.forEach((el) => observer.unobserve(el));
       observer.disconnect();
     };
-  }, [activePage, mediaItems, adminUnlocked]);
+  }, [activePage, mediaItems, adminUnlocked, hiddenPortalUnlocked]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -401,6 +407,30 @@ I want to know more about courses and admissions.`;
     setActivePage(page);
     setMobileMenuOpen(false);
     setShowSuccess(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const openHiddenPortal = () => {
+    const entered = window.prompt("Enter hidden portal password");
+    if (!entered) return;
+
+    if (entered === HIDDEN_PORTAL_PASSWORD) {
+      setHiddenPortalUnlocked(true);
+      setAdminUnlocked(false);
+      setAdminPassword("");
+      setActivePage("admin-portal");
+      setMobileMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      alert("Wrong hidden portal password");
+    }
+  };
+
+  const closeHiddenPortal = () => {
+    setHiddenPortalUnlocked(false);
+    setAdminUnlocked(false);
+    setAdminPassword("");
+    setActivePage("home");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -647,7 +677,13 @@ I want to know more about courses and admissions.`;
           <button
             type="button"
             className="brand-button"
-            onClick={() => goToPage("home")}
+            onClick={(e) => {
+              if (e.shiftKey) {
+                openHiddenPortal();
+              } else {
+                goToPage("home");
+              }
+            }}
           >
             <div className="brand">
               <div className="brand-logo-image-wrap">
@@ -677,7 +713,9 @@ I want to know more about courses and admissions.`;
 
           <nav className={`nav-links ${mobileMenuOpen ? "open" : ""}`}>
             {pages
-              .filter((page) => page !== "admin-portal")
+              .filter(
+                (page) => page !== "admin-portal" && page !== "admin-media"
+              )
               .map((page) => (
                 <button
                   key={page}
@@ -1416,7 +1454,7 @@ I want to know more about courses and admissions.`;
             </section>
           )}
 
-          {activePage === "admin-media" && (
+          {activePage === "admin-media" && hiddenPortalUnlocked && (
             <section className="section reveal">
               <div className="section-head">
                 <span className="pill">Admin Media Panel</span>
@@ -1564,14 +1602,14 @@ I want to know more about courses and admissions.`;
             </section>
           )}
 
-          {activePage === "admin-portal" && (
+          {activePage === "admin-portal" && hiddenPortalUnlocked && (
             <section className="section reveal">
               <div className="section-head">
                 <span className="pill">Hidden Admin Portal</span>
                 <h2>Stithpragya Control Dashboard</h2>
                 <p>
-                  This private portal is for managing student and teacher form
-                  access, records, and dashboard controls.
+                  This private portal is for managing student forms, teacher
+                  forms, sheets, and media controls.
                 </p>
               </div>
 
@@ -1612,12 +1650,10 @@ I want to know more about courses and admissions.`;
                     </a>
 
                     <a
-                      href="#"
+                      href={teacherSheetLink}
+                      target="_blank"
+                      rel="noreferrer"
                       className="btn btn-glass"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        alert("Teacher sheet link add karna baki hai.");
-                      }}
                     >
                       Open Teacher Sheet
                     </a>
@@ -1625,22 +1661,51 @@ I want to know more about courses and admissions.`;
                 </article>
               </div>
 
+              <div className="grid-2" style={{ marginTop: "24px" }}>
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Admin Media Control</h3>
+                  <p>
+                    YouTube videos aur Instagram media manage karne ke liye
+                    admin media panel yahan se open karo.
+                  </p>
+
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      className="btn btn-gold"
+                      onClick={() => goToPage("admin-media")}
+                    >
+                      Open Admin Media
+                    </button>
+                  </div>
+                </article>
+
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Dashboard Overview</h3>
+                  <p>
+                    Student aur teacher sheet linked hai. Next step me yahin par
+                    total students, total teachers, course-wise count, aur
+                    mode-wise stats show karenge.
+                  </p>
+                </article>
+              </div>
+
               <div className="grid-3" style={{ marginTop: "24px" }}>
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Total Students</h3>
-                  <p>Dashboard stats Google Sheet link hone ke baad yahan show honge.</p>
+                  <p>Student sheet se analytics yahan show honge.</p>
                 </article>
 
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Total Teachers</h3>
-                  <p>Teacher application data link hone ke baad yahan show hoga.</p>
+                  <p>Teacher sheet se analytics yahan show honge.</p>
                 </article>
 
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Course Analytics</h3>
                   <p>
-                    Participation in music field ke basis par course-wise count
-                    yahan dikhega.
+                    Participation in music aur Apply for Mode ke basis par
+                    detailed stats yahan dikhenge.
                   </p>
                 </article>
               </div>
@@ -1648,10 +1713,10 @@ I want to know more about courses and admissions.`;
               <div className="contact-submit-row" style={{ marginTop: "24px" }}>
                 <button
                   type="button"
-                  className="btn btn-gold"
-                  onClick={() => goToPage("home")}
+                  className="btn btn-glass"
+                  onClick={closeHiddenPortal}
                 >
-                  Back to Website
+                  Close Hidden Portal
                 </button>
               </div>
             </section>
@@ -1686,7 +1751,9 @@ I want to know more about courses and admissions.`;
 
           <div className="footer-links">
             {pages
-              .filter((page) => page !== "admin-portal")
+              .filter(
+                (page) => page !== "admin-portal" && page !== "admin-media"
+              )
               .map((page) => (
                 <button
                   key={page}
@@ -1697,16 +1764,6 @@ I want to know more about courses and admissions.`;
                 </button>
               ))}
           </div>
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: "10px" }}>
-          <button
-            type="button"
-            className="btn btn-glass small"
-            onClick={() => goToPage("admin-portal")}
-          >
-            Open Hidden Portal
-          </button>
         </div>
       </footer>
     </div>
