@@ -298,11 +298,8 @@ function App() {
   });
 
   const navRef = useRef(null);
-  const logoTapCountRef = useRef(0);
-  const logoTapTimerRef = useRef(null);
   const himanshuTapCountRef = useRef(0);
   const himanshuTapTimerRef = useRef(null);
-  const [logoTapUnlocked, setLogoTapUnlocked] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -405,9 +402,6 @@ function App() {
 
   useEffect(() => {
     return () => {
-      if (logoTapTimerRef.current) {
-        clearTimeout(logoTapTimerRef.current);
-      }
       if (himanshuTapTimerRef.current) {
         clearTimeout(himanshuTapTimerRef.current);
       }
@@ -444,8 +438,6 @@ I want to know more about courses and admissions.`;
       setAdminPassword("");
       setActivePage("admin-portal");
       setMobileMenuOpen(false);
-      setLogoTapUnlocked(false);
-      logoTapCountRef.current = 0;
       himanshuTapCountRef.current = 0;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -453,29 +445,7 @@ I want to know more about courses and admissions.`;
     }
   };
 
-  const handleLogoSecretTap = () => {
-    logoTapCountRef.current += 1;
-
-    if (logoTapTimerRef.current) {
-      clearTimeout(logoTapTimerRef.current);
-    }
-
-    logoTapTimerRef.current = setTimeout(() => {
-      logoTapCountRef.current = 0;
-      himanshuTapCountRef.current = 0;
-      setLogoTapUnlocked(false);
-    }, 1800);
-
-    if (logoTapCountRef.current >= 5) {
-      logoTapCountRef.current = 0;
-      himanshuTapCountRef.current = 0;
-      setLogoTapUnlocked(true);
-    }
-  };
-
   const handleHimanshuSecretTap = () => {
-    if (!logoTapUnlocked) return;
-
     himanshuTapCountRef.current += 1;
 
     if (himanshuTapTimerRef.current) {
@@ -484,11 +454,10 @@ I want to know more about courses and admissions.`;
 
     himanshuTapTimerRef.current = setTimeout(() => {
       himanshuTapCountRef.current = 0;
-    }, 1200);
+    }, 1800);
 
-    if (himanshuTapCountRef.current >= 2) {
+    if (himanshuTapCountRef.current >= 5) {
       himanshuTapCountRef.current = 0;
-      setLogoTapUnlocked(false);
       openHiddenPortal();
     }
   };
@@ -497,8 +466,6 @@ I want to know more about courses and admissions.`;
     setHiddenPortalUnlocked(false);
     setAdminUnlocked(false);
     setAdminPassword("");
-    setLogoTapUnlocked(false);
-    logoTapCountRef.current = 0;
     himanshuTapCountRef.current = 0;
     setActivePage("home");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -761,7 +728,6 @@ I want to know more about courses and admissions.`;
                 return;
               }
 
-              handleLogoSecretTap();
               goToPage("home");
             }}
           >
