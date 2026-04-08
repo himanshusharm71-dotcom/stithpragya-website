@@ -20,13 +20,18 @@ app.use(
     methods: ["GET", "POST"],
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 const PORT = process.env.PORT || 5000;
 const mediaFile = path.join(__dirname, "media.json");
+const reviewFile = path.join(__dirname, "reviews.json");
 
 if (!fs.existsSync(mediaFile)) {
   fs.writeFileSync(mediaFile, JSON.stringify([], null, 2), "utf8");
+}
+
+if (!fs.existsSync(reviewFile)) {
+  fs.writeFileSync(reviewFile, JSON.stringify([], null, 2), "utf8");
 }
 
 const readMedia = () => {
@@ -42,6 +47,21 @@ const readMedia = () => {
 
 const writeMedia = (data) => {
   fs.writeFileSync(mediaFile, JSON.stringify(data, null, 2), "utf8");
+};
+
+const readReviews = () => {
+  try {
+    const raw = fs.readFileSync(reviewFile, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.log("Read review error:", error);
+    return [];
+  }
+};
+
+const writeReviews = (data) => {
+  fs.writeFileSync(reviewFile, JSON.stringify(data, null, 2), "utf8");
 };
 
 const transporter = nodemailer.createTransport({
@@ -79,6 +99,68 @@ app.get("/media", (req, res) => {
     res.json({ success: true, media });
   } catch (error) {
     console.log("Get media error:", error);
+    res.status(500).json({
+      success: false,
+      message: error?.message || "Server error",
+    });
+  }
+});
+
+app.get("/reviews", (req, res) => {
+  try {
+    const reviews = readReviews();
+    res.json({ success: true, reviews });
+  } catch (error) {
+    console.log("Get reviews error:", error);
+    res.status(500).json({
+      success: false,
+      message: error?.message || "Server error",
+    });
+  }
+});
+
+app.post("/reviews", (req, res) => {
+  try {
+    const { name, course, rating, review, image } = req.body;
+
+    if (!name || !course || !rating || !review) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, course, rating and review are required",
+      });
+    }
+
+    const numericRating = Number(rating);
+
+    if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be between 1 and 5",
+      });
+    }
+
+    const reviews = readReviews();
+
+    const newReview = {
+      id: Date.now(),
+      name: String(name).trim(),
+      course: String(course).trim(),
+      rating: numericRating,
+      review: String(review).trim(),
+      image: image ? String(image) : "",
+      createdAt: new Date().toISOString(),
+    };
+
+    reviews.unshift(newReview);
+    writeReviews(reviews);
+
+    res.json({
+      success: true,
+      review: newReview,
+      message: "Review submitted successfully",
+    });
+  } catch (error) {
+    console.log("Add review error:", error);
     res.status(500).json({
       success: false,
       message: error?.message || "Server error",

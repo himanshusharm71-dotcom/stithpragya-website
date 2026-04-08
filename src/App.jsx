@@ -43,6 +43,7 @@ const SHEET_ID = "1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w";
 const STUDENT_TAB_NAME = "Student Responses 1";
 const TEACHER_TAB_NAME = "Teacher Responses";
 const AUTO_REFRESH_MS = 45000;
+const API_BASE = "https://stithpragya-backend.onrender.com";
 
 const courses = [
   {
@@ -284,8 +285,6 @@ const pages = [
   "admin-portal",
 ];
 
-const API_BASE = "https://stithpragya-backend.onrender.com";
-
 const normalizeKey = (key) =>
   String(key || "")
     .trim()
@@ -370,6 +369,11 @@ const formatDate = (value) => {
   return value;
 };
 
+const getNumericRating = (value) => {
+  const num = Number(String(value || "").trim());
+  return Number.isFinite(num) && num >= 1 && num <= 5 ? num : null;
+};
+
 function App() {
   const [activePage, setActivePage] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -395,6 +399,16 @@ function App() {
   const [teacherRows, setTeacherRows] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [lastDashboardSync, setLastDashboardSync] = useState("");
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    name: "",
+    course: "",
+    rating: 5,
+    review: "",
+    image: "",
+  });
 
   const navRef = useRef(null);
   const himanshuTapCountRef = useRef(0);
@@ -436,6 +450,7 @@ function App() {
     hiddenPortalUnlocked,
     studentRows,
     teacherRows,
+    reviews,
   ]);
 
   useEffect(() => {
@@ -493,6 +508,30 @@ function App() {
     };
 
     fetchMedia();
+  }, []);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        const res = await fetch(`${API_BASE}/reviews`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data?.message || "Review fetch failed");
+        if (data?.success && Array.isArray(data.reviews)) {
+          setReviews(data.reviews);
+        } else {
+          setReviews([]);
+        }
+      } catch (error) {
+        console.log("Review fetch error:", error);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
   }, []);
 
   useEffect(() => {
@@ -578,6 +617,12 @@ function App() {
         name: getCellValue(row, nameKeys) || "Unnamed",
         timestamp: getCellValue(row, timeKeys) || "",
         extra: getCellValue(row, extraKeys) || "",
+        rating: getCellValue(row, [
+          "Rating",
+          "Experience Rating",
+          "Teacher Rating",
+          "Student Rating",
+        ]),
       }))
       .slice(-limit)
       .reverse();
@@ -628,6 +673,48 @@ I want to know more about courses and admissions.`;
     ["Teaching Skill"],
     5
   );
+
+  const studentRatings = studentRows
+    .map((row) =>
+      getCellValue(row, [
+        "Rating",
+        "Experience Rating",
+        "Teacher Rating",
+        "Student Rating",
+      ])
+    )
+    .map(getNumericRating)
+    .filter((value) => value !== null);
+
+  const teacherRatings = teacherRows
+    .map((row) =>
+      getCellValue(row, [
+        "Rating",
+        "Experience Rating",
+        "Teacher Rating",
+        "Student Rating",
+      ])
+    )
+    .map(getNumericRating)
+    .filter((value) => value !== null);
+
+  const calculateAverage = (arr) =>
+    arr.length
+      ? (arr.reduce((sum, val) => sum + val, 0) / arr.length).toFixed(1)
+      : "0.0";
+
+  const avgStudentRating = calculateAverage(studentRatings);
+  const avgTeacherRating = calculateAverage(teacherRatings);
+  const overallRating = calculateAverage([
+    ...studentRatings,
+    ...teacherRatings,
+  ]);
+
+  const publicReviewRatings = reviews
+    .map((item) => getNumericRating(item.rating))
+    .filter((value) => value !== null);
+
+  const publicReviewAverage = calculateAverage(publicReviewRatings);
 
   const maxCourseCount = Math.max(1, ...Object.values(combinedCourseCounts));
   const maxModeCount = Math.max(1, ...Object.values(combinedModeCounts));
@@ -806,6 +893,67 @@ I want to know more about courses and admissions.`;
     }
   };
 
+  const handleReviewImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReviewForm((prev) => ({
+        ...prev,
+        image: reader.result,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+
+    if (
+      !reviewForm.name.trim() ||
+      !reviewForm.course.trim() ||
+      !reviewForm.review.trim()
+    ) {
+      alert("Please fill all review fields");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reviewForm),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.message || "Review submit failed");
+      }
+
+      if (data?.success && data.review) {
+        setReviews((prev) => [data.review, ...prev]);
+        setReviewForm({
+          name: "",
+          course: "",
+          rating: 5,
+          review: "",
+          image: "",
+        });
+        setSuccessText("Review Submitted Successfully");
+        setShowSuccess(true);
+      } else {
+        alert(data?.message || "Failed to submit review");
+      }
+    } catch (error) {
+      console.log("Submit review error:", error);
+      alert(error.message || "Server error ❌");
+    }
+  };
+
   const getYouTubeVideoId = (url) => {
     try {
       const parsed = new URL(url);
@@ -962,6 +1110,9 @@ I want to know more about courses and admissions.`;
       </div>
     ));
   };
+
+  const renderStars = (rating) =>
+    "★".repeat(Number(rating || 0)) + "☆".repeat(5 - Number(rating || 0));
 
   return (
     <div
@@ -1238,6 +1389,191 @@ I want to know more about courses and admissions.`;
                   ))}
                 </div>
               </section>
+
+              <section className="section reveal">
+                <div className="section-head">
+                  <span className="pill">Student Reviews</span>
+                  <h2>Public Rating & Review Section</h2>
+                  <p>
+                    Students can rate their learning experience, share feedback,
+                    and upload their photo for the home page review section.
+                  </p>
+                </div>
+
+                <div className="grid-2 review-overview-grid">
+                  <article className="glass-card content-card panel-tilt reveal">
+                    <h3>Review Summary</h3>
+                    <div className="review-summary-row">
+                      <div className="review-summary-box">
+                        <strong>{publicReviewAverage}</strong>
+                        <span>Average Rating</span>
+                      </div>
+                      <div className="review-summary-box">
+                        <strong>{reviews.length}</strong>
+                        <span>Total Reviews</span>
+                      </div>
+                    </div>
+                    <div className="public-stars-display">
+                      {renderStars(Math.round(Number(publicReviewAverage) || 0))}
+                    </div>
+                  </article>
+
+                  <article className="contact-card reveal">
+                    <div className="contact-card-glow" />
+                    <div className="contact-inner">
+                      <span className="contact-label">Submit Review</span>
+                      <h3>Share Your Experience</h3>
+
+                      <form onSubmit={submitReview}>
+                        <input
+                          className="field"
+                          type="text"
+                          placeholder="Your Name"
+                          value={reviewForm.name}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                        />
+
+                        <input
+                          className="field"
+                          type="text"
+                          placeholder="Course Name"
+                          value={reviewForm.course}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              course: e.target.value,
+                            }))
+                          }
+                        />
+
+                        <div className="review-rating-wrap">
+                          <label className="review-label">
+                            Select Rating
+                          </label>
+                          <div className="rating-stars-row">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                className={`star-btn ${
+                                  Number(reviewForm.rating) >= star
+                                    ? "active"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  setReviewForm((prev) => ({
+                                    ...prev,
+                                    rating: star,
+                                  }))
+                                }
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <textarea
+                          className="field textarea"
+                          placeholder="Write your review"
+                          value={reviewForm.review}
+                          onChange={(e) =>
+                            setReviewForm((prev) => ({
+                              ...prev,
+                              review: e.target.value,
+                            }))
+                          }
+                        />
+
+                        <div className="review-upload-wrap">
+                          <label className="review-label">
+                            Upload Student Image
+                          </label>
+                          <input
+                            className="field"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleReviewImageUpload}
+                          />
+                        </div>
+
+                        {reviewForm.image ? (
+                          <div className="review-preview-box">
+                            <img
+                              src={reviewForm.image}
+                              alt="Review Preview"
+                              className="review-preview-image"
+                            />
+                          </div>
+                        ) : null}
+
+                        <div className="contact-submit-row">
+                          <button type="submit" className="btn btn-gold">
+                            Submit Review
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </article>
+                </div>
+
+                <div className="course-grid" style={{ marginTop: "24px" }}>
+                  {reviewsLoading ? (
+                    <article className="glass-card content-card reveal">
+                      <h3>Loading reviews...</h3>
+                    </article>
+                  ) : reviews.length === 0 ? (
+                    <article className="glass-card content-card reveal">
+                      <h3>No reviews added yet</h3>
+                      <p>
+                        Be the first student to share a rating and review.
+                      </p>
+                    </article>
+                  ) : (
+                    reviews.map((item) => (
+                      <article
+                        className="review-card glass-card panel-tilt reveal"
+                        key={item.id}
+                      >
+                        <div className="review-card-top">
+                          <div className="review-avatar-wrap">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="review-avatar"
+                              />
+                            ) : (
+                              <div className="review-avatar review-avatar-fallback">
+                                {String(item.name || "S").charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="review-head-content">
+                            <h3>{item.name}</h3>
+                            <div className="review-course">{item.course}</div>
+                            <div className="review-stars">
+                              {renderStars(item.rating)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="review-text">{item.review}</p>
+
+                        <div className="review-date">
+                          {item.createdAt ? formatDate(item.createdAt) : ""}
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </section>
             </>
           )}
 
@@ -1450,8 +1786,8 @@ I want to know more about courses and admissions.`;
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>What you can watch here</h3>
                   <p>
-                    Admin panel se add ki gayi YouTube videos aur Instagram reel
-                    links yahan automatic boxes ke form me dikhengi.
+                    YouTube videos and Instagram reels added from the admin
+                    panel will automatically appear here.
                   </p>
 
                   <div className="media-badges">
@@ -1994,8 +2330,8 @@ I want to know more about courses and admissions.`;
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Admin Media Control</h3>
                   <p>
-                    YouTube videos aur Instagram media manage karne ke liye
-                    admin media panel yahan se open karo.
+                    Use this panel to manage YouTube videos, Instagram media,
+                    and admin media controls.
                   </p>
 
                   <div className="button-row">
@@ -2020,8 +2356,8 @@ I want to know more about courses and admissions.`;
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Dashboard Overview</h3>
                   <p>
-                    Student aur teacher sheet linked hai. Auto refresh bhi on
-                    hai.
+                    Student and teacher sheets are connected. Auto refresh is
+                    enabled.
                   </p>
                   <div className="feature-grid" style={{ marginTop: "18px" }}>
                     <div className="feature-item">
@@ -2083,6 +2419,47 @@ I want to know more about courses and admissions.`;
                 </article>
               </div>
 
+              <div className="grid-3" style={{ marginTop: "24px" }}>
+                <article className="glass-card info-card panel-tilt reveal">
+                  <h3>Student Rating</h3>
+                  <p
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: "700",
+                      marginTop: "12px",
+                    }}
+                  >
+                    {avgStudentRating} / 5
+                  </p>
+                </article>
+
+                <article className="glass-card info-card panel-tilt reveal">
+                  <h3>Teacher Rating</h3>
+                  <p
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: "700",
+                      marginTop: "12px",
+                    }}
+                  >
+                    {avgTeacherRating} / 5
+                  </p>
+                </article>
+
+                <article className="glass-card info-card panel-tilt reveal">
+                  <h3>Overall Rating</h3>
+                  <p
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: "700",
+                      marginTop: "12px",
+                    }}
+                  >
+                    {overallRating} / 5
+                  </p>
+                </article>
+              </div>
+
               <div className="grid-2" style={{ marginTop: "24px" }}>
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Course Analytics</h3>
@@ -2115,6 +2492,7 @@ I want to know more about courses and admissions.`;
                         >
                           {entry.name}
                           {entry.extra ? ` - ${entry.extra}` : ""}
+                          {entry.rating ? ` - Rating: ${entry.rating}` : ""}
                           {entry.timestamp
                             ? ` - ${formatDate(entry.timestamp)}`
                             : ""}
@@ -2139,6 +2517,7 @@ I want to know more about courses and admissions.`;
                         >
                           {entry.name}
                           {entry.extra ? ` - ${entry.extra}` : ""}
+                          {entry.rating ? ` - Rating: ${entry.rating}` : ""}
                           {entry.timestamp
                             ? ` - ${formatDate(entry.timestamp)}`
                             : ""}
@@ -2152,7 +2531,7 @@ I want to know more about courses and admissions.`;
               <div className="grid-2" style={{ marginTop: "24px" }}>
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Export Data</h3>
-                  <p>Excel me open hone wali CSV files download karo.</p>
+                  <p>Download CSV files that can be opened in Excel.</p>
                   <div className="button-row" style={{ marginTop: "18px" }}>
                     <button
                       type="button"
