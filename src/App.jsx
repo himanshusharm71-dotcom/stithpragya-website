@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import academyLogo from "./assets/logo.png";
 import mayankPhoto from "./assets/mayank.jpg";
 import himanshuPhoto from "./assets/himanshu.jpg";
@@ -33,6 +39,10 @@ const teacherSheetLink =
   "https://docs.google.com/spreadsheets/d/1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w/edit?usp=sharing";
 
 const HIDDEN_PORTAL_PASSWORD = "stith123";
+const SHEET_ID = "1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w";
+const STUDENT_TAB_NAME = "Student Responses 1";
+const TEACHER_TAB_NAME = "Teacher Responses";
+const AUTO_REFRESH_MS = 45000;
 
 const courses = [
   {
@@ -276,6 +286,90 @@ const pages = [
 
 const API_BASE = "https://stithpragya-backend.onrender.com";
 
+const normalizeKey = (key) =>
+  String(key || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[.*:()\-?]/g, "");
+
+const getCellValue = (row, possibleKeys) => {
+  for (const key of possibleKeys) {
+    const normalized = normalizeKey(key);
+    const match = Object.keys(row).find(
+      (rowKey) => normalizeKey(rowKey) === normalized
+    );
+    if (match && row[match] !== undefined && row[match] !== null) {
+      return String(row[match]).trim();
+    }
+  }
+  return "";
+};
+
+const parseGoogleSheetResponse = (text) => {
+  const jsonText = text
+    .replace("/*O_o*/", "")
+    .replace(/google\.visualization\.Query\.setResponse\(/, "")
+    .replace(/\);$/, "");
+
+  const data = JSON.parse(jsonText);
+  const table = data.table;
+
+  if (!table || !table.cols || !table.rows) return [];
+  const headers = table.cols.map((col) => col.label || col.id || "");
+
+  return table.rows.map((row) => {
+    const obj = {};
+    headers.forEach((header, index) => {
+      const cell = row.c[index];
+      obj[header] = cell ? cell.v ?? "" : "";
+    });
+    return obj;
+  });
+};
+
+const formatDate = (value) => {
+  if (!value) return "";
+
+  if (typeof value === "string" && value.startsWith("Date(")) {
+    const parts = value
+      .replace("Date(", "")
+      .replace(")", "")
+      .split(",")
+      .map(Number);
+
+    const date = new Date(
+      parts[0],
+      parts[1],
+      parts[2],
+      parts[3] || 0,
+      parts[4] || 0,
+      parts[5] || 0
+    );
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  const parsedDate = new Date(value);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  return value;
+};
+
 function App() {
   const [activePage, setActivePage] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -297,6 +391,11 @@ function App() {
     url: "",
   });
 
+  const [studentRows, setStudentRows] = useState([]);
+  const [teacherRows, setTeacherRows] = useState([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [lastDashboardSync, setLastDashboardSync] = useState("");
+
   const navRef = useRef(null);
   const himanshuTapCountRef = useRef(0);
   const himanshuTapTimerRef = useRef(null);
@@ -307,7 +406,6 @@ function App() {
       const y = (e.clientY / window.innerHeight - 0.5) * 22;
       setMousePosition({ x, y });
     };
-
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
@@ -331,7 +429,14 @@ function App() {
       elements.forEach((el) => observer.unobserve(el));
       observer.disconnect();
     };
-  }, [activePage, mediaItems, adminUnlocked, hiddenPortalUnlocked]);
+  }, [
+    activePage,
+    mediaItems,
+    adminUnlocked,
+    hiddenPortalUnlocked,
+    studentRows,
+    teacherRows,
+  ]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -366,7 +471,6 @@ function App() {
 
     window.addEventListener("scroll", updateScrollProgress);
     updateScrollProgress();
-
     return () => window.removeEventListener("scroll", updateScrollProgress);
   }, [activePage]);
 
@@ -376,10 +480,7 @@ function App() {
         const res = await fetch(`${API_BASE}/media`);
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data?.message || "Media fetch failed");
-        }
-
+        if (!res.ok) throw new Error(data?.message || "Media fetch failed");
         if (data?.success && Array.isArray(data.media)) {
           setMediaItems(data.media);
         } else {
@@ -408,10 +509,128 @@ function App() {
     };
   }, []);
 
+  const fetchSheetTab = useCallback(async (sheetName) => {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(
+      sheetName
+    )}&tqx=out:json`;
+
+    const res = await fetch(url);
+    const text = await res.text();
+    return parseGoogleSheetResponse(text);
+  }, []);
+
+  const refreshDashboardData = useCallback(async () => {
+    try {
+      setDashboardLoading(true);
+
+      const [students, teachers] = await Promise.all([
+        fetchSheetTab(STUDENT_TAB_NAME),
+        fetchSheetTab(TEACHER_TAB_NAME),
+      ]);
+
+      setStudentRows(students);
+      setTeacherRows(teachers);
+      setLastDashboardSync(new Date().toLocaleString());
+    } catch (error) {
+      console.error("Dashboard data fetch failed:", error);
+      setStudentRows([]);
+      setTeacherRows([]);
+    } finally {
+      setDashboardLoading(false);
+    }
+  }, [fetchSheetTab]);
+
+  useEffect(() => {
+    if (hiddenPortalUnlocked) {
+      refreshDashboardData();
+    }
+  }, [hiddenPortalUnlocked, refreshDashboardData]);
+
+  useEffect(() => {
+    if (!hiddenPortalUnlocked) return undefined;
+
+    const interval = setInterval(() => {
+      refreshDashboardData();
+    }, AUTO_REFRESH_MS);
+
+    return () => clearInterval(interval);
+  }, [hiddenPortalUnlocked, refreshDashboardData]);
+
+  const countByField = (rows, keys) => {
+    const counts = {};
+    rows.forEach((row) => {
+      const value = getCellValue(row, keys);
+      if (!value) return;
+      counts[value] = (counts[value] || 0) + 1;
+    });
+    return counts;
+  };
+
+  const getRecentEntries = (
+    rows,
+    nameKeys,
+    timeKeys,
+    extraKeys = [],
+    limit = 5
+  ) =>
+    rows
+      .map((row) => ({
+        name: getCellValue(row, nameKeys) || "Unnamed",
+        timestamp: getCellValue(row, timeKeys) || "",
+        extra: getCellValue(row, extraKeys) || "",
+      }))
+      .slice(-limit)
+      .reverse();
+
   const enquiryText = useMemo(() => {
     return `Hello ${academy.name},
 I want to know more about courses and admissions.`;
   }, []);
+
+  const studentCourseCounts = countByField(studentRows, [
+    "Participation in music",
+  ]);
+  const teacherSkillCounts = countByField(teacherRows, ["Teaching Skill"]);
+
+  const combinedCourseCounts = {};
+  Object.entries(studentCourseCounts).forEach(([key, value]) => {
+    combinedCourseCounts[key] = (combinedCourseCounts[key] || 0) + value;
+  });
+  Object.entries(teacherSkillCounts).forEach(([key, value]) => {
+    combinedCourseCounts[key] = (combinedCourseCounts[key] || 0) + value;
+  });
+
+  const studentModeCounts = countByField(studentRows, [
+    "Apply for Online and Offline",
+  ]);
+  const teacherModeCounts = countByField(teacherRows, ["Apply for Mode"]);
+
+  const combinedModeCounts = {};
+  Object.entries(studentModeCounts).forEach(([key, value]) => {
+    combinedModeCounts[key] = (combinedModeCounts[key] || 0) + value;
+  });
+  Object.entries(teacherModeCounts).forEach(([key, value]) => {
+    combinedModeCounts[key] = (combinedModeCounts[key] || 0) + value;
+  });
+
+  const recentStudents = getRecentEntries(
+    studentRows,
+    ["Name"],
+    ["Timestamp"],
+    ["Participation in music"],
+    5
+  );
+
+  const recentTeachers = getRecentEntries(
+    teacherRows,
+    ["Name"],
+    ["Timestamp"],
+    ["Teaching Skill"],
+    5
+  );
+
+  const maxCourseCount = Math.max(1, ...Object.values(combinedCourseCounts));
+  const maxModeCount = Math.max(1, ...Object.values(combinedModeCounts));
 
   const goToPage = (page) => {
     if (
@@ -546,11 +765,7 @@ I want to know more about courses and admissions.`;
 
       if (data?.success && data.media) {
         setMediaItems((prev) => [data.media, ...prev]);
-        setAdminForm({
-          type: "youtube",
-          title: "",
-          url: "",
-        });
+        setAdminForm({ type: "youtube", title: "", url: "" });
         setSuccessText("Media Added Successfully");
         setShowSuccess(true);
       } else {
@@ -569,10 +784,7 @@ I want to know more about courses and admissions.`;
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          password: adminPassword,
-          id,
-        }),
+        body: JSON.stringify({ password: adminPassword, id }),
       });
 
       const data = await res.json();
@@ -597,15 +809,12 @@ I want to know more about courses and admissions.`;
   const getYouTubeVideoId = (url) => {
     try {
       const parsed = new URL(url);
-
       if (parsed.hostname.includes("youtu.be")) {
         return parsed.pathname.replace("/", "");
       }
-
       if (parsed.hostname.includes("youtube.com")) {
         return parsed.searchParams.get("v");
       }
-
       return null;
     } catch {
       return null;
@@ -671,19 +880,87 @@ I want to know more about courses and admissions.`;
           index === 0 ? "mayank-photo" : "himanshu-photo"
         }`}
         onClick={() => {
-          if (index === 1) {
-            handleHimanshuSecretTap();
-          }
+          if (index === 1) handleHimanshuSecretTap();
         }}
         onError={() => {
-          if (index === 0) {
-            setMayankBroken(true);
-          } else {
-            setHimanshuBroken(true);
-          }
+          if (index === 0) setMayankBroken(true);
+          else setHimanshuBroken(true);
         }}
       />
     );
+  };
+
+  const exportCsv = (rows, fileName) => {
+    if (!rows.length) {
+      alert("No data to export");
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const escapeCsv = (value) =>
+      `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+    const csvContent = [
+      headers.map(escapeCsv).join(","),
+      ...rows.map((row) =>
+        headers.map((header) => escapeCsv(row[header])).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const renderMiniBarChart = (data, maxValue) => {
+    const entries = Object.entries(data);
+    if (!entries.length) {
+      return <div className="feature-item">No data found</div>;
+    }
+
+    return entries.map(([label, value]) => (
+      <div key={label} style={{ marginBottom: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "12px",
+            marginBottom: "6px",
+            fontSize: "14px",
+          }}
+        >
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+        <div
+          style={{
+            width: "100%",
+            height: "10px",
+            borderRadius: "999px",
+            background: "rgba(255,255,255,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${(value / maxValue) * 100}%`,
+              height: "100%",
+              borderRadius: "999px",
+              background:
+                "linear-gradient(90deg, rgba(240,190,90,0.95), rgba(255,225,160,0.95))",
+            }}
+          />
+        </div>
+      </div>
+    ));
   };
 
   return (
@@ -727,7 +1004,6 @@ I want to know more about courses and admissions.`;
                 openHiddenPortal();
                 return;
               }
-
               goToPage("home");
             }}
           >
@@ -792,7 +1068,6 @@ I want to know more about courses and admissions.`;
                 <div className="hero-copy premium-panel panel-tilt">
                   <div className="hero-bg-shape shape-1" />
                   <div className="hero-bg-shape shape-2" />
-
                   <span className="pill">
                     Professional Training in Music & Dance
                   </span>
@@ -1663,7 +1938,7 @@ I want to know more about courses and admissions.`;
                 <h2>Stithpragya Control Dashboard</h2>
                 <p>
                   This private portal is for managing student forms, teacher
-                  forms, sheets, media controls, and dashboard analytics.
+                  forms, sheets, media controls, and live dashboard analytics.
                 </p>
               </div>
 
@@ -1731,100 +2006,189 @@ I want to know more about courses and admissions.`;
                     >
                       Open Admin Media
                     </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-glass"
+                      onClick={refreshDashboardData}
+                    >
+                      Refresh Data
+                    </button>
                   </div>
                 </article>
 
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Dashboard Overview</h3>
                   <p>
-                    Student aur teacher sheet linked hai. Next step me yahin par
-                    total students, total teachers, course-wise count, mode-wise
-                    count, aur recent submissions show karenge.
+                    Student aur teacher sheet linked hai. Auto refresh bhi on
+                    hai.
                   </p>
+                  <div className="feature-grid" style={{ marginTop: "18px" }}>
+                    <div className="feature-item">
+                      {dashboardLoading
+                        ? "Loading data..."
+                        : "Dashboard connected"}
+                    </div>
+                    <div className="feature-item">
+                      Student Tab: {STUDENT_TAB_NAME}
+                    </div>
+                    <div className="feature-item">
+                      Teacher Tab: {TEACHER_TAB_NAME}
+                    </div>
+                    <div className="feature-item">
+                      Last Sync: {lastDashboardSync || "Not synced yet"}
+                    </div>
+                  </div>
                 </article>
               </div>
 
               <div className="grid-3" style={{ marginTop: "24px" }}>
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Total Students</h3>
-                  <p>Student sheet analytics yahan show honge.</p>
+                  <p
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: "700",
+                      marginTop: "12px",
+                    }}
+                  >
+                    {studentRows.length}
+                  </p>
                 </article>
 
                 <article className="glass-card info-card panel-tilt reveal">
                   <h3>Total Teachers</h3>
-                  <p>Teacher sheet analytics yahan show honge.</p>
+                  <p
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: "700",
+                      marginTop: "12px",
+                    }}
+                  >
+                    {teacherRows.length}
+                  </p>
                 </article>
 
                 <article className="glass-card info-card panel-tilt reveal">
-                  <h3>Course Analytics</h3>
-                  <p>
-                    Student aur teacher course-wise participation yahan show
-                    hoga.
+                  <h3>Total Responses</h3>
+                  <p
+                    style={{
+                      fontSize: "28px",
+                      fontWeight: "700",
+                      marginTop: "12px",
+                    }}
+                  >
+                    {studentRows.length + teacherRows.length}
                   </p>
                 </article>
               </div>
 
               <div className="grid-2" style={{ marginTop: "24px" }}>
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Course Analytics</h3>
+                  <div style={{ marginTop: "18px" }}>
+                    {renderMiniBarChart(combinedCourseCounts, maxCourseCount)}
+                  </div>
+                </article>
+
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Mode-wise Counts</h3>
-                  <p>
-                    Online, Offline aur Home Tuition ke counts yahan show honge.
-                  </p>
-
-                  <div className="feature-grid" style={{ marginTop: "18px" }}>
-                    <div className="feature-item">Online: Pending</div>
-                    <div className="feature-item">Offline: Pending</div>
-                    <div className="feature-item">Home Tuition: Pending</div>
-                  </div>
-                </article>
-
-                <article className="glass-card content-card panel-tilt reveal">
-                  <h3>Recent Student Submissions</h3>
-                  <p>
-                    Latest student form responses next phase me yahan show
-                    hongi.
-                  </p>
-
-                  <div className="feature-grid" style={{ marginTop: "18px" }}>
-                    <div className="feature-item">Recent Entry 1: Pending</div>
-                    <div className="feature-item">Recent Entry 2: Pending</div>
-                    <div className="feature-item">Recent Entry 3: Pending</div>
+                  <div style={{ marginTop: "18px" }}>
+                    {renderMiniBarChart(combinedModeCounts, maxModeCount)}
                   </div>
                 </article>
               </div>
 
               <div className="grid-2" style={{ marginTop: "24px" }}>
                 <article className="glass-card content-card panel-tilt reveal">
-                  <h3>Recent Teacher Submissions</h3>
-                  <p>
-                    Latest teacher form responses next phase me yahan show
-                    hongi.
-                  </p>
-
+                  <h3>Recent Student Submissions</h3>
                   <div className="feature-grid" style={{ marginTop: "18px" }}>
-                    <div className="feature-item">Recent Entry 1: Pending</div>
-                    <div className="feature-item">Recent Entry 2: Pending</div>
-                    <div className="feature-item">Recent Entry 3: Pending</div>
+                    {recentStudents.length === 0 ? (
+                      <div className="feature-item">
+                        No student submissions found
+                      </div>
+                    ) : (
+                      recentStudents.map((entry, index) => (
+                        <div
+                          className="feature-item"
+                          key={`${entry.name}-${index}`}
+                        >
+                          {entry.name}
+                          {entry.extra ? ` - ${entry.extra}` : ""}
+                          {entry.timestamp
+                            ? ` - ${formatDate(entry.timestamp)}`
+                            : ""}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </article>
+
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Recent Teacher Submissions</h3>
+                  <div className="feature-grid" style={{ marginTop: "18px" }}>
+                    {recentTeachers.length === 0 ? (
+                      <div className="feature-item">
+                        No teacher submissions found
+                      </div>
+                    ) : (
+                      recentTeachers.map((entry, index) => (
+                        <div
+                          className="feature-item"
+                          key={`${entry.name}-${index}`}
+                        >
+                          {entry.name}
+                          {entry.extra ? ` - ${entry.extra}` : ""}
+                          {entry.timestamp
+                            ? ` - ${formatDate(entry.timestamp)}`
+                            : ""}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </article>
+              </div>
+
+              <div className="grid-2" style={{ marginTop: "24px" }}>
+                <article className="glass-card content-card panel-tilt reveal">
+                  <h3>Export Data</h3>
+                  <p>Excel me open hone wali CSV files download karo.</p>
+                  <div className="button-row" style={{ marginTop: "18px" }}>
+                    <button
+                      type="button"
+                      className="btn btn-gold"
+                      onClick={() => exportCsv(studentRows, "students.csv")}
+                    >
+                      Export Students
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-glass"
+                      onClick={() => exportCsv(teacherRows, "teachers.csv")}
+                    >
+                      Export Teachers
+                    </button>
                   </div>
                 </article>
 
                 <article className="glass-card content-card panel-tilt reveal">
                   <h3>Portal Status</h3>
-                  <p>
-                    Hidden portal unlocked hai. Forms, sheets aur media controls
-                    ab yahin se manage kiye ja sakte hain.
-                  </p>
-
                   <div className="feature-grid" style={{ marginTop: "18px" }}>
                     <div className="feature-item">Student Form Linked</div>
                     <div className="feature-item">Teacher Form Linked</div>
                     <div className="feature-item">Spreadsheet Linked</div>
                     <div className="feature-item">Admin Media Protected</div>
+                    <div className="feature-item">
+                      Auto Refresh: {AUTO_REFRESH_MS / 1000}s
+                    </div>
                   </div>
                 </article>
               </div>
 
-              <div className="contact-submit-row" style={{ marginTop: "24px" }}>
+              <div
+                className="contact-submit-row"
+                style={{ marginTop: "24px" }}
+              >
                 <button
                   type="button"
                   className="btn btn-glass"
