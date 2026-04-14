@@ -2355,3 +2355,271 @@ button {
     filter: none !important;
   }
 }
+/* =========================
+   CINEMATIC 3D HERO EFFECT
+   ========================= */
+
+.hero-copy-3d-glow,
+.hero-3d-orb,
+.hero-3d-ring,
+.hero-3d-platform,
+.hero-3d-note,
+.hero-3d-beam,
+.hero-image-edge-glow {
+  pointer-events: none;
+}
+
+.hero-visual-3d {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-copy {
+  overflow: hidden;
+}
+
+.hero-copy-3d-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(34px);
+  opacity: 0.45;
+  z-index: 0;
+}
+
+.hero-copy-3d-glow-1 {
+  width: 180px;
+  height: 180px;
+  top: -20px;
+  left: -10px;
+  background: radial-gradient(circle, rgba(241, 206, 135, 0.22), transparent 70%);
+  animation: heroGlowFloat 7s ease-in-out infinite;
+}
+
+.hero-copy-3d-glow-2 {
+  width: 170px;
+  height: 170px;
+  right: -30px;
+  bottom: 40px;
+  background: radial-gradient(circle, rgba(123, 31, 49, 0.24), transparent 72%);
+  animation: heroGlowFloat 8.5s ease-in-out infinite reverse;
+}
+
+.hero-3d-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  perspective: 1200px;
+}
+
+.hero-3d-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(8px);
+  opacity: 0.88;
+  animation: heroOrbFloat 7s ease-in-out infinite;
+}
+
+.hero-3d-orb-1 {
+  width: 88px;
+  height: 88px;
+  top: 38px;
+  right: 54px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 245, 220, 0.95), rgba(241, 206, 135, 0.65), rgba(184, 134, 63, 0.14));
+  box-shadow: 0 0 28px rgba(241, 206, 135, 0.24);
+}
+
+.hero-3d-orb-2 {
+  width: 62px;
+  height: 62px;
+  top: 165px;
+  left: 26px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(241, 206, 135, 0.52), rgba(184, 134, 63, 0.12));
+  animation-duration: 8.5s;
+}
+
+.hero-3d-orb-3 {
+  width: 110px;
+  height: 110px;
+  right: 18px;
+  bottom: 120px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 231, 183, 0.72), rgba(123, 31, 49, 0.32), rgba(123, 31, 49, 0.04));
+  filter: blur(14px);
+  animation-duration: 9.5s;
+}
+
+.hero-3d-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(241, 206, 135, 0.24);
+  box-shadow: inset 0 0 18px rgba(241, 206, 135, 0.07), 0 0 22px rgba(241, 206, 135, 0.08);
+  animation: heroRingSpin 16s linear infinite;
+}
+
+.hero-3d-ring-1 {
+  width: 220px;
+  height: 220px;
+  right: 10px;
+  top: 56px;
+}
+
+.hero-3d-ring-2 {
+  width: 160px;
+  height: 160px;
+  left: -26px;
+  bottom: 96px;
+  animation-direction: reverse;
+  animation-duration: 18s;
+}
+
+.hero-3d-note {
+  position: absolute;
+  font-size: 34px;
+  color: rgba(241, 206, 135, 0.46);
+  text-shadow: 0 0 20px rgba(241, 206, 135, 0.12);
+  animation: heroNoteFloat 6.5s ease-in-out infinite;
+}
+
+.hero-3d-note-1 {
+  top: 58px;
+  left: 28px;
+}
+
+.hero-3d-note-2 {
+  top: 210px;
+  right: 42px;
+  animation-duration: 7.4s;
+}
+
+.hero-3d-note-3 {
+  bottom: 154px;
+  left: 70px;
+  animation-duration: 8.2s;
+}
+
+.hero-3d-platform {
+  position: absolute;
+  left: 50%;
+  bottom: 128px;
+  width: 76%;
+  height: 54px;
+  transform: translateX(-50%) perspective(900px) rotateX(72deg);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(241, 206, 135, 0.22), rgba(184, 134, 63, 0.05) 58%, transparent 74%);
+  filter: blur(4px);
+  opacity: 0.85;
+}
+
+.hero-3d-beam {
+  position: absolute;
+  width: 180px;
+  height: 380px;
+  top: -40px;
+  border-radius: 999px;
+  filter: blur(26px);
+  transform: rotate(12deg);
+  opacity: 0.22;
+}
+
+.hero-3d-beam-1 {
+  right: 50px;
+  background: linear-gradient(180deg, rgba(255, 244, 213, 0.42), rgba(241, 206, 135, 0.14), transparent);
+  animation: heroBeamMove1 7.5s ease-in-out infinite;
+}
+
+.hero-3d-beam-2 {
+  left: -10px;
+  transform: rotate(-14deg);
+  background: linear-gradient(180deg, rgba(123, 31, 49, 0.34), rgba(241, 206, 135, 0.08), transparent);
+  animation: heroBeamMove2 9s ease-in-out infinite reverse;
+}
+
+.hero-image-shell-3d {
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(241, 206, 135, 0.1),
+    0 0 36px rgba(241, 206, 135, 0.12);
+  transform: perspective(1200px) rotateX(4deg) rotateY(-4deg);
+  transition: transform 0.45s ease, box-shadow 0.45s ease;
+}
+
+.hero-visual:hover .hero-image-shell-3d {
+  transform: perspective(1200px) rotateX(2deg) rotateY(-2deg) translateY(-4px);
+  box-shadow:
+    0 34px 74px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(241, 206, 135, 0.14),
+    0 0 48px rgba(241, 206, 135, 0.18);
+}
+
+.hero-image-edge-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(241, 206, 135, 0.14), transparent 28%, transparent 72%, rgba(123, 31, 49, 0.18)),
+    radial-gradient(circle at top right, rgba(255, 245, 220, 0.09), transparent 24%);
+  mix-blend-mode: screen;
+}
+
+@keyframes heroGlowFloat {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) translateX(8px) scale(1.06);
+  }
+}
+
+@keyframes heroOrbFloat {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) translateX(6px) scale(1.06);
+  }
+}
+
+@keyframes heroRingSpin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.02);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes heroNoteFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.36;
+  }
+  50% {
+    transform: translateY(-14px) rotate(7deg);
+    opacity: 0.72;
+  }
+}
+
+@keyframes heroBeamMove1 {
+  0%, 100% {
+    transform: translateY(0) rotate(12deg);
+  }
+  50% {
+    transform: translateY(14px) rotate(8deg);
+  }
+}
+
+@keyframes heroBeamMove2 {
+  0%, 100% {
+    transform: translateY(0) rotate(-14deg);
+  }
+  50% {
+    transform: translateY(14px) rotate(-10deg);
+  }
+}
