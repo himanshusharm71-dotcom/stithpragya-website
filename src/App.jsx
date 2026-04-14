@@ -18,7 +18,8 @@ const academy = {
   phone1: "+91 6377648387",
   phone2: "+91 8890725368",
   email: "stithpragyasangeetsansthan7@gmail.com",
-  address: "Jaipur, Rajasthan",
+  address:
+    "1891, Sukhlal Vyas Ki Gali, Natanio Ka Rasta, Vidhyadhar Ka Rasta, Chaura Rasta, Jaipur, Rajasthan 302003",
   whatsapp: "919024225368",
   instagram:
     "https://www.instagram.com/stithpragyamusic?igsh=NDQ2eTlkcTg3MnZh",
@@ -37,6 +38,9 @@ const studentSheetLink =
 
 const teacherSheetLink =
   "https://docs.google.com/spreadsheets/d/1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w/edit?usp=sharing";
+
+const googleLocationLink =
+  "https://www.google.com/maps/search/?api=1&query=1891,+Sukhlal+Vyas+Ki+Gali,+Natanio+Ka+Rasta,+Vidhyadhar+Ka+Rasta,+Chaura+Rasta,+Jaipur,+Rajasthan+302003";
 
 const HIDDEN_PORTAL_PASSWORD = "stith123";
 const SHEET_ID = "1Q7EbLBkHK4niMw8b6oXNosbl6UmPPKeO19qxwv2O23w";
@@ -428,13 +432,23 @@ function App() {
     const elements = document.querySelectorAll(".reveal");
     if (!elements.length) return undefined;
 
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      elements.forEach((el) => el.classList.add("active"));
+      return undefined;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) entry.target.classList.add("active");
         });
       },
-      { threshold: 0.14 }
+      {
+        threshold: 0.08,
+        rootMargin: "0px 0px -8% 0px",
+      }
     );
 
     elements.forEach((el) => observer.observe(el));
@@ -1219,6 +1233,9 @@ I want to know more about courses and admissions.`;
                 <div className="hero-copy premium-panel panel-tilt">
                   <div className="hero-bg-shape shape-1" />
                   <div className="hero-bg-shape shape-2" />
+                  <div className="hero-copy-3d-glow hero-copy-3d-glow-1" />
+                  <div className="hero-copy-3d-glow hero-copy-3d-glow-2" />
+
                   <span className="pill">
                     Professional Training in Music & Dance
                   </span>
@@ -1297,10 +1314,24 @@ I want to know more about courses and admissions.`;
                   </div>
                 </div>
 
-                <div className="hero-visual premium-panel panel-tilt">
+                <div className="hero-visual premium-panel panel-tilt hero-visual-3d">
                   <div className="hero-badge">Music • Dance • Performance</div>
 
-                  <div className="hero-image-shell">
+                  <div className="hero-3d-stage" aria-hidden="true">
+                    <div className="hero-3d-orb hero-3d-orb-1" />
+                    <div className="hero-3d-orb hero-3d-orb-2" />
+                    <div className="hero-3d-orb hero-3d-orb-3" />
+                    <div className="hero-3d-ring hero-3d-ring-1" />
+                    <div className="hero-3d-ring hero-3d-ring-2" />
+                    <div className="hero-3d-note hero-3d-note-1">♪</div>
+                    <div className="hero-3d-note hero-3d-note-2">♫</div>
+                    <div className="hero-3d-note hero-3d-note-3">♬</div>
+                    <div className="hero-3d-platform" />
+                    <div className="hero-3d-beam hero-3d-beam-1" />
+                    <div className="hero-3d-beam hero-3d-beam-2" />
+                  </div>
+
+                  <div className="hero-image-shell hero-image-shell-3d">
                     <img
                       className="hero-image"
                       src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80"
@@ -1308,6 +1339,7 @@ I want to know more about courses and admissions.`;
                     />
                     <div className="hero-image-overlay" />
                     <div className="hero-image-shine" />
+                    <div className="hero-image-edge-glow" />
                   </div>
 
                   <div className="hero-mini-grid">
@@ -1984,6 +2016,17 @@ I want to know more about courses and admissions.`;
                         <strong>Location:</strong> {academy.address}
                       </div>
                     </div>
+
+                    <div className="contact-submit-row" style={{ marginTop: "20px" }}>
+                      <a
+                        href={googleLocationLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-glass"
+                      >
+                        Open Google Location
+                      </a>
+                    </div>
                   </div>
                 </article>
 
@@ -2080,6 +2123,14 @@ I want to know more about courses and admissions.`;
                         className="contact-action-btn"
                       >
                         YouTube
+                      </a>
+                      <a
+                        href={googleLocationLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="contact-action-btn"
+                      >
+                        Google Location
                       </a>
                     </div>
                   </div>
