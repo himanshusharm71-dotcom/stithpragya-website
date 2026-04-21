@@ -26,6 +26,169 @@ const academy = {
   youtube:
     "https://youtube.com/@stithpragyasangeetsansthan7?si=fRNVZuZRQVW-o6ij",
 };
+function SmokeCanvas({
+  className = "",
+  intensity = 1,
+  fullScreen = false,
+  fromBottom = true,
+}) {
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const particlesRef = useRef([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let running = true;
+
+    const random = (min, max) => Math.random() * (max - min) + min;
+
+    const createParticle = () => {
+      const startY = fromBottom ? height + random(0, 100) : random(0, height);
+      return {
+        x: random(-80, width + 80),
+        y: startY,
+        r: fullScreen ? random(60, 180) : random(40, 140),
+        alpha: fullScreen ? random(0.025, 0.07) : random(0.03, 0.08),
+        vx: random(-0.18, 0.18),
+        vy: fullScreen ? random(0.18, 0.45) : random(0.28, 0.65),
+        grow: random(0.03, 0.12),
+        wobble: random(0.2, 1.2),
+        wobbleSpeed: random(0.003, 0.012),
+        life: 0,
+        maxLife: random(500, 1100),
+      };
+    };
+
+    const buildParticles = () => {
+      const count = fullScreen
+        ? Math.max(70, Math.floor(95 * intensity))
+        : Math.max(34, Math.floor(54 * intensity));
+
+      particlesRef.current = Array.from({ length: count }, () => createParticle());
+    };
+
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+
+      width = fullScreen ? window.innerWidth : parent.offsetWidth;
+      height = fullScreen ? window.innerHeight : parent.offsetHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.max(1, Math.floor(width * dpr));
+      canvas.height = Math.max(1, Math.floor(height * dpr));
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildParticles();
+    };
+
+    const drawParticle = (p, t) => {
+      const wobbleX = Math.sin(t * p.wobbleSpeed + p.wobble) * 18;
+      const radius = p.r + p.life * p.grow * 0.35;
+
+      const gradient = ctx.createRadialGradient(
+        p.x + wobbleX,
+        p.y,
+        0,
+        p.x + wobbleX,
+        p.y,
+        radius
+      );
+
+      gradient.addColorStop(0, `rgba(255,255,255,${p.alpha})`);
+      gradient.addColorStop(0.35, `rgba(230,235,240,${p.alpha * 0.72})`);
+      gradient.addColorStop(0.72, `rgba(180,190,205,${p.alpha * 0.22})`);
+      gradient.addColorStop(1, "rgba(255,255,255,0)");
+
+      ctx.globalCompositeOperation = "screen";
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(p.x + wobbleX, p.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    const animate = (time) => {
+      if (!running) return;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const t = time || 0;
+      const particles = particlesRef.current;
+
+      for (let i = 0; i < particles.length; i += 1) {
+        const p = particles[i];
+        p.life += 1;
+        p.y -= p.vy;
+        p.x += p.vx;
+
+        drawParticle(p, t);
+
+        const out =
+          p.y < -220 ||
+          p.x < -220 ||
+          p.x > width + 220 ||
+          p.life > p.maxLife;
+
+        if (out) {
+          particles[i] = createParticle();
+        }
+      }
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    resize();
+    animate(0);
+
+    window.addEventListener("resize", resize);
+
+    return () => {
+      running = false;
+      window.removeEventListener("resize", resize);
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [fullScreen, fromBottom, intensity]);
+
+  return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
+}
+
+function SmokeIntro() {
+  const [hide, setHide] = useState(false);
+  const [remove, setRemove] = useState(false);
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setHide(true), 2100);
+    const removeTimer = setTimeout(() => setRemove(true), 3400);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
+
+  if (remove) return null;
+
+  return (
+    <div className={`smoke-intro-overlay ${hide ? "is-hidden" : ""}`}>
+      <div className="smoke-intro-backdrop" />
+      <SmokeCanvas
+        className="smoke-intro-canvas"
+        intensity={1.15}
+        fullScreen
+        fromBottom
+      />
+      <div className="smoke-intro-vignette" />
+    </div>
+  );
+}
 
 const studentFormLink =
   "https://docs.google.com/forms/d/e/1FAIpQLSfwE8vrdDvcn7r0vN2m5EEqw_zn3Bx0baZLeiPIDvCNBCAVWg/viewform?usp=dialog";
@@ -207,6 +370,76 @@ const courses = [
     mode: "Online / Offline / Home Tuition",
   },
 ];
+const artists = [
+  {
+    name: "Himanshu Sharma",
+    role: "Singer & Guitarist",
+    city: "Jaipur, Rajasthan",
+    genres: ["Bollywood", "Retro", "Romantic", "Sufi", "Unplugged"],
+    languages: ["Hindi", "English"],
+    eventTypes: [
+      "Café Gigs",
+      "College Fests",
+      "Private Parties",
+      "Weddings",
+      "Corporate Events",
+    ],
+    about:
+      "Live singer and guitarist available for café performances, college events, weddings, private shows, and musical evenings.",
+    instagram: "https://www.instagram.com/himanshu_sharma16902",
+    youtube: academy.youtube,
+    whatsapp: "916377648387",
+    price: "Starting from ₹3,000",
+    image: himanshuPhoto,
+  },
+  {
+    name: "Mayank Soni",
+    role: "Music Mentor & Performer",
+    city: "Jaipur, Rajasthan",
+    genres: ["Classical", "Melodic", "Bhajan", "Light Music"],
+    languages: ["Hindi"],
+    eventTypes: ["Cultural Events", "Music Sessions", "Private Functions"],
+    about:
+      "Experienced music mentor and performer focused on quality, discipline, and soulful musical presentation.",
+    instagram: academy.instagram,
+    youtube: academy.youtube,
+    whatsapp: "919024225368",
+    price: "On Request",
+    image: mayankPhoto,
+  },
+  {
+    name: "Live Café Artist",
+    role: "Acoustic Performer",
+    city: "Jaipur, Rajasthan",
+    genres: ["Acoustic", "Indie", "Soft Bollywood"],
+    languages: ["Hindi", "English"],
+    eventTypes: ["Café Gigs", "Restaurant Nights", "Private Events"],
+    about:
+      "Ideal for calm acoustic evenings, café nights, and soft live music sessions.",
+    instagram: academy.instagram,
+    youtube: academy.youtube,
+    whatsapp: "919024225368",
+    price: "Starting from ₹2,500",
+    image:
+      "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    name: "Stage Performance Artist",
+    role: "Live Entertainer",
+    city: "Jaipur, Rajasthan",
+    genres: ["Bollywood", "Party", "Live Crowd Engagement"],
+    languages: ["Hindi", "English"],
+    eventTypes: ["College Events", "Stage Shows", "Corporate Events"],
+    about:
+      "Energetic live performer suitable for crowd engagement, stage shows, and celebration events.",
+    instagram: academy.instagram,
+    youtube: academy.youtube,
+    whatsapp: "919024225368",
+    price: "Starting from ₹5,000",
+    image:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80",
+  },
+];
 
 const courseOptions = [
   "Guitar",
@@ -284,6 +517,7 @@ const pages = [
   "gallery",
   "media",
   "teachers",
+  "artists",
   "contact",
   "admin-media",
   "admin-portal",
@@ -413,7 +647,23 @@ function App() {
     review: "",
     image: "",
   });
-
+const [showArtistForm, setShowArtistForm] = useState(false);
+const [artistForm, setArtistForm] = useState({
+  name: "",
+  stageName: "",
+  phone: "",
+  email: "",
+  city: "",
+  category: "",
+  genres: "",
+  languages: "",
+  experience: "",
+  eventTypes: "",
+  price: "",
+  instagram: "",
+  youtube: "",
+  about: "",
+});
   const navRef = useRef(null);
   const himanshuTapCountRef = useRef(0);
   const himanshuTapTimerRef = useRef(null);
@@ -1003,10 +1253,11 @@ I want to know more about courses and admissions.`;
   };
 
   const getPageLabel = (page) => {
-    if (page === "admin-media") return "Admin Media";
-    if (page === "admin-portal") return "Admin Portal";
-    return page.charAt(0).toUpperCase() + page.slice(1);
-  };
+  if (page === "admin-media") return "Admin Media";
+  if (page === "admin-portal") return "Admin Portal";
+  if (page === "artists") return "Artists";
+  return page.charAt(0).toUpperCase() + page.slice(1);
+};
 
   const renderLogo = (className, altText) => {
     if (logoBroken) {
@@ -1125,6 +1376,75 @@ I want to know more about courses and admissions.`;
     ));
   };
 
+  const handleArtistFormChange = (e) => {
+  const { name, value } = e.target;
+  setArtistForm((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+const submitArtistForm = (e) => {
+  e.preventDefault();
+
+  if (
+    !artistForm.name.trim() ||
+    !artistForm.phone.trim() ||
+    !artistForm.city.trim() ||
+    !artistForm.category.trim()
+  ) {
+    alert("Please fill required artist details");
+    return;
+  }
+
+  const message = `
+Hello Stithpragya Music Academy,
+
+I want to join as an artist.
+
+Name: ${artistForm.name}
+Stage Name: ${artistForm.stageName}
+Phone: ${artistForm.phone}
+Email: ${artistForm.email}
+City: ${artistForm.city}
+Category: ${artistForm.category}
+Genres: ${artistForm.genres}
+Languages: ${artistForm.languages}
+Experience: ${artistForm.experience}
+Event Types: ${artistForm.eventTypes}
+Price: ${artistForm.price}
+Instagram: ${artistForm.instagram}
+YouTube: ${artistForm.youtube}
+About: ${artistForm.about}
+  `.trim();
+
+  window.open(
+    `https://wa.me/${academy.whatsapp}?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
+
+  setShowArtistForm(false);
+  setArtistForm({
+    name: "",
+    stageName: "",
+    phone: "",
+    email: "",
+    city: "",
+    category: "",
+    genres: "",
+    languages: "",
+    experience: "",
+    eventTypes: "",
+    price: "",
+    instagram: "",
+    youtube: "",
+    about: "",
+  });
+
+  setSuccessText("Artist Form Opened on WhatsApp");
+  setShowSuccess(true);
+};
+
   const renderStars = (rating) =>
     "★".repeat(Number(rating || 0)) + "☆".repeat(5 - Number(rating || 0));
 
@@ -1136,6 +1456,7 @@ I want to know more about courses and admissions.`;
         "--my": `${mousePosition.y}px`,
       }}
     >
+      <SmokeIntro />
       <div
         className="cursor-glow"
         style={{
@@ -1150,7 +1471,6 @@ I want to know more about courses and admissions.`;
           top: `calc(68% + ${mousePosition.y * 6}px)`,
         }}
       />
-
       <div className="floating-notes" aria-hidden="true">
         <span className="note note-1">♪</span>
         <span className="note note-2">♫</span>
@@ -1169,6 +1489,7 @@ I want to know more about courses and admissions.`;
                 openHiddenPortal();
                 return;
               }
+              
               goToPage("home");
             }}
           >
@@ -1227,387 +1548,383 @@ I want to know more about courses and admissions.`;
 
       <main className="container">
         <div className="page-transition" key={activePage}>
-          {activePage === "home" && (
-            <>
-              <section className="hero reveal">
-                <div className="hero-copy premium-panel panel-tilt">
-                  <div className="hero-bg-shape shape-1" />
-                  <div className="hero-bg-shape shape-2" />
-                  <div className="hero-copy-3d-glow hero-copy-3d-glow-1" />
-                  <div className="hero-copy-3d-glow hero-copy-3d-glow-2" />
+        {activePage === "home" && (
+  <>
+    <section className="hero reveal cinematic-hero smoke-hero">
+      <SmokeCanvas className="hero-real-smoke" intensity={1} fromBottom />
+<div className="hero-smoke-fade" aria-hidden="true" />
+      <div className="hero-copy premium-panel panel-tilt">
+        <div className="hero-bg-shape shape-1" />
+        <div className="hero-bg-shape shape-2" />
+        <div className="hero-copy-3d-glow hero-copy-3d-glow-1" />
+        <div className="hero-copy-3d-glow hero-copy-3d-glow-2" />
+        <div className="hero-spotlight-layer" />
 
-                  <span className="pill">
-                    Professional Training in Music & Dance
-                  </span>
+        <span className="pill">
+          Professional Training in Music & Dance
+        </span>
 
-                  <div className="hero-brand-chip">
-                    {renderLogo("chip-logo-image", "Academy Logo")}
-                    <div className="chip-text">
-                      <small>Welcome To</small>
-                      <strong>Stithpragya Music Academy</strong>
-                    </div>
-                  </div>
+        <div className="hero-brand-chip">
+          {renderLogo("chip-logo-image", "Academy Logo")}
+          <div className="chip-text">
+            <small>Welcome To</small>
+            <strong>Stithpragya Music Academy</strong>
+          </div>
+        </div>
 
-                  <h2>
-                    Learn with discipline.
-                    <span className="gold-text"> Perform with confidence.</span>
-                  </h2>
+        <h2 className="hero-cinematic-title">
+          Learn with discipline.
+          <span className="gold-text"> Perform with confidence.</span>
+        </h2>
 
-                  <p>
-                    Stithpragya Music Academy provides structured training in
-                    music and dance for students who want to improve their
-                    skills, creativity, and stage performance in a guided and
-                    inspiring environment.
-                  </p>
+        <p>
+          Stithpragya Music Academy provides structured training in music and
+          dance for students who want to improve their skills, creativity, and
+          stage performance in a guided and inspiring environment.
+        </p>
 
-                  <div className="button-row">
+        <div className="button-row">
+          <button
+            type="button"
+            className="btn btn-gold"
+            onClick={() => goToPage("contact")}
+          >
+            Book Demo
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-glass"
+            onClick={() => goToPage("courses")}
+          >
+            Explore Courses
+          </button>
+
+          <a
+            href={`https://wa.me/${academy.whatsapp}?text=${encodeURIComponent(
+              enquiryText
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-glass"
+          >
+            WhatsApp
+          </a>
+        </div>
+
+        <div className="hero-tags">
+          <span>Singing</span>
+          <span>Instruments</span>
+          <span>Dance</span>
+          <span>Performance Training</span>
+        </div>
+
+        <div className="stats-grid">
+          <div className="glass-card stat-card reveal">
+            <strong>Music</strong>
+            <span>Vocal and Instrument Training</span>
+          </div>
+          <div className="glass-card stat-card reveal">
+            <strong>Dance</strong>
+            <span>Kathak and Bollywood Classes</span>
+          </div>
+          <div className="glass-card stat-card reveal">
+            <strong>Stage</strong>
+            <span>Performance Confidence Building</span>
+          </div>
+          <div className="glass-card stat-card reveal">
+            <strong>Learning</strong>
+            <span>Online and Offline Guidance</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="hero-visual premium-panel panel-tilt hero-visual-3d">
+        <div className="hero-badge">Music • Dance • Performance</div>
+
+        <div className="hero-3d-stage" aria-hidden="true">
+          <div className="hero-3d-orb hero-3d-orb-1"></div>
+          <div className="hero-3d-orb hero-3d-orb-2"></div>
+          <div className="hero-3d-orb hero-3d-orb-3"></div>
+          <div className="hero-3d-ring hero-3d-ring-1"></div>
+          <div className="hero-3d-ring hero-3d-ring-2"></div>
+          <div className="hero-3d-note hero-3d-note-1">♪</div>
+          <div className="hero-3d-note hero-3d-note-2">♫</div>
+          <div className="hero-3d-note hero-3d-note-3">♬</div>
+          <div className="hero-3d-platform"></div>
+          <div className="hero-3d-beam hero-3d-beam-1"></div>
+          <div className="hero-3d-beam hero-3d-beam-2"></div>
+        </div>
+
+        <div className="hero-image-shell hero-image-shell-3d">
+          <img
+            className="hero-image"
+            src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80"
+            alt="Stithpragya Music Academy showcase"
+          />
+          <div className="hero-image-overlay" />
+          <div className="hero-image-shine" />
+          <div className="hero-image-edge-glow" />
+        </div>
+
+        <div className="hero-mini-grid">
+          <div className="mini-card">
+            <h4>Skill Development</h4>
+            <p>
+              Focused classes that help students improve technique, rhythm,
+              expression, and confidence.
+            </p>
+          </div>
+          <div className="mini-card">
+            <h4>Performance Exposure</h4>
+            <p>
+              Training designed to prepare students for stage presence, live
+              presentation, and artistic growth.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="section reveal">
+      <div className="section-head">
+        <span className="pill">Why Choose Us</span>
+        <h2>Training that builds skill and confidence</h2>
+        <p>
+          The academy focuses on proper learning, regular practice, guided
+          improvement, and performance readiness.
+        </p>
+      </div>
+
+      <div className="grid-3">
+        <article className="glass-card info-card panel-tilt reveal">
+          <h3>Structured Learning</h3>
+          <p>
+            Classes are planned to help students improve step by step, with
+            attention to basics, practice, and consistency.
+          </p>
+        </article>
+
+        <article className="glass-card info-card panel-tilt reveal">
+          <h3>Creative Growth</h3>
+          <p>
+            Students are encouraged to develop expression, confidence, and
+            artistic individuality along with technical skill.
+          </p>
+        </article>
+
+        <article className="glass-card info-card panel-tilt reveal">
+          <h3>Performance Focus</h3>
+          <p>
+            Training also supports stage confidence, presentation, and real
+            performance preparation.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section className="section reveal">
+      <div className="section-head">
+        <span className="pill">Learning Experience</span>
+        <h2>What makes the academy experience valuable</h2>
+        <p>
+          Students grow here through disciplined practice, support, and
+          performance-oriented guidance.
+        </p>
+      </div>
+
+      <div className="grid-3">
+        {testimonials.map((item) => (
+          <article
+            className="glass-card testimonial-card panel-tilt reveal"
+            key={item.name}
+          >
+            <div className="stars">★★★★★</div>
+            <p>{item.text}</p>
+            <h4>{item.name}</h4>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section className="section reveal">
+      <div className="section-head">
+        <span className="pill">Student Reviews</span>
+        <h2>Public Rating & Review Section</h2>
+        <p>
+          Students can rate their learning experience, share feedback, and
+          upload their photo for the home page review section.
+        </p>
+      </div>
+
+      <div className="grid-2 review-overview-grid">
+        <article className="glass-card content-card panel-tilt reveal">
+          <h3>Review Summary</h3>
+          <div className="review-summary-row">
+            <div className="review-summary-box">
+              <strong>{publicReviewAverage}</strong>
+              <span>Average Rating</span>
+            </div>
+            <div className="review-summary-box">
+              <strong>{reviews.length}</strong>
+              <span>Total Reviews</span>
+            </div>
+          </div>
+          <div className="public-stars-display">
+            {renderStars(Math.round(Number(publicReviewAverage) || 0))}
+          </div>
+        </article>
+
+        <article className="contact-card reveal">
+          <div className="contact-card-glow" />
+          <div className="contact-inner">
+            <span className="contact-label">Submit Review</span>
+            <h3>Share Your Experience</h3>
+
+            <form onSubmit={submitReview}>
+              <input
+                className="field"
+                type="text"
+                placeholder="Your Name"
+                value={reviewForm.name}
+                onChange={(e) =>
+                  setReviewForm((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+              />
+
+              <input
+                className="field"
+                type="text"
+                placeholder="Course Name"
+                value={reviewForm.course}
+                onChange={(e) =>
+                  setReviewForm((prev) => ({
+                    ...prev,
+                    course: e.target.value,
+                  }))
+                }
+              />
+
+              <div className="review-rating-wrap">
+                <label className="review-label">Select Rating</label>
+                <div className="rating-stars-row">
+                  {[1, 2, 3, 4, 5].map((star) => (
                     <button
+                      key={star}
                       type="button"
-                      className="btn btn-gold"
-                      onClick={() => goToPage("contact")}
+                      className={`star-btn ${
+                        Number(reviewForm.rating) >= star ? "active" : ""
+                      }`}
+                      onClick={() =>
+                        setReviewForm((prev) => ({
+                          ...prev,
+                          rating: star,
+                        }))
+                      }
                     >
-                      Book Demo
+                      ★
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-glass"
-                      onClick={() => goToPage("courses")}
-                    >
-                      Explore Courses
-                    </button>
-                    <a
-                      href={`https://wa.me/${academy.whatsapp}?text=${encodeURIComponent(
-                        enquiryText
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-glass"
-                    >
-                      WhatsApp
-                    </a>
-                  </div>
-
-                  <div className="hero-tags">
-                    <span>Singing</span>
-                    <span>Instruments</span>
-                    <span>Dance</span>
-                    <span>Performance Training</span>
-                  </div>
-
-                  <div className="stats-grid">
-                    <div className="glass-card stat-card reveal">
-                      <strong>Music</strong>
-                      <span>Vocal and Instrument Training</span>
-                    </div>
-                    <div className="glass-card stat-card reveal">
-                      <strong>Dance</strong>
-                      <span>Kathak and Bollywood Classes</span>
-                    </div>
-                    <div className="glass-card stat-card reveal">
-                      <strong>Stage</strong>
-                      <span>Performance Confidence Building</span>
-                    </div>
-                    <div className="glass-card stat-card reveal">
-                      <strong>Learning</strong>
-                      <span>Online and Offline Guidance</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="hero-visual premium-panel panel-tilt hero-visual-3d">
-                  <div className="hero-badge">Music • Dance • Performance</div>
-
-                  <div className="hero-3d-stage" aria-hidden="true">
-                    <div className="hero-3d-orb hero-3d-orb-1" />
-                    <div className="hero-3d-orb hero-3d-orb-2" />
-                    <div className="hero-3d-orb hero-3d-orb-3" />
-                    <div className="hero-3d-ring hero-3d-ring-1" />
-                    <div className="hero-3d-ring hero-3d-ring-2" />
-                    <div className="hero-3d-note hero-3d-note-1">♪</div>
-                    <div className="hero-3d-note hero-3d-note-2">♫</div>
-                    <div className="hero-3d-note hero-3d-note-3">♬</div>
-                    <div className="hero-3d-platform" />
-                    <div className="hero-3d-beam hero-3d-beam-1" />
-                    <div className="hero-3d-beam hero-3d-beam-2" />
-                  </div>
-
-                  <div className="hero-image-shell hero-image-shell-3d">
-                    <img
-                      className="hero-image"
-                      src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80"
-                      alt="Stithpragya Music Academy showcase"
-                    />
-                    <div className="hero-image-overlay" />
-                    <div className="hero-image-shine" />
-                    <div className="hero-image-edge-glow" />
-                  </div>
-
-                  <div className="hero-mini-grid">
-                    <div className="mini-card">
-                      <h4>Skill Development</h4>
-                      <p>
-                        Focused classes that help students improve technique,
-                        rhythm, expression, and confidence.
-                      </p>
-                    </div>
-                    <div className="mini-card">
-                      <h4>Performance Exposure</h4>
-                      <p>
-                        Training designed to prepare students for stage
-                        presence, live presentation, and artistic growth.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section className="section reveal">
-                <div className="section-head">
-                  <span className="pill">Why Choose Us</span>
-                  <h2>Training that builds skill and confidence</h2>
-                  <p>
-                    The academy focuses on proper learning, regular practice,
-                    guided improvement, and performance readiness.
-                  </p>
-                </div>
-
-                <div className="grid-3">
-                  <article className="glass-card info-card panel-tilt reveal">
-                    <h3>Structured Learning</h3>
-                    <p>
-                      Classes are planned to help students improve step by step,
-                      with attention to basics, practice, and consistency.
-                    </p>
-                  </article>
-
-                  <article className="glass-card info-card panel-tilt reveal">
-                    <h3>Creative Growth</h3>
-                    <p>
-                      Students are encouraged to develop expression, confidence,
-                      and artistic individuality along with technical skill.
-                    </p>
-                  </article>
-
-                  <article className="glass-card info-card panel-tilt reveal">
-                    <h3>Performance Focus</h3>
-                    <p>
-                      Training also supports stage confidence, presentation, and
-                      real performance preparation.
-                    </p>
-                  </article>
-                </div>
-              </section>
-
-              <section className="section reveal">
-                <div className="section-head">
-                  <span className="pill">Learning Experience</span>
-                  <h2>What makes the academy experience valuable</h2>
-                  <p>
-                    Students grow here through disciplined practice, support,
-                    and performance-oriented guidance.
-                  </p>
-                </div>
-
-                <div className="grid-3">
-                  {testimonials.map((item) => (
-                    <article
-                      className="glass-card testimonial-card panel-tilt reveal"
-                      key={item.name}
-                    >
-                      <div className="stars">★★★★★</div>
-                      <p>{item.text}</p>
-                      <h4>{item.name}</h4>
-                    </article>
                   ))}
                 </div>
-              </section>
+              </div>
 
-              <section className="section reveal">
-                <div className="section-head">
-                  <span className="pill">Student Reviews</span>
-                  <h2>Public Rating & Review Section</h2>
-                  <p>
-                    Students can rate their learning experience, share feedback,
-                    and upload their photo for the home page review section.
-                  </p>
+              <textarea
+                className="field textarea"
+                placeholder="Write your review"
+                value={reviewForm.review}
+                onChange={(e) =>
+                  setReviewForm((prev) => ({
+                    ...prev,
+                    review: e.target.value,
+                  }))
+                }
+              />
+
+              <div className="review-upload-wrap">
+                <label className="review-label">Upload Student Image</label>
+                <input
+                  className="field"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReviewImageUpload}
+                />
+              </div>
+
+              {reviewForm.image ? (
+                <div className="review-preview-box">
+                  <img
+                    src={reviewForm.image}
+                    alt="Review Preview"
+                    className="review-preview-image"
+                  />
                 </div>
+              ) : null}
 
-                <div className="grid-2 review-overview-grid">
-                  <article className="glass-card content-card panel-tilt reveal">
-                    <h3>Review Summary</h3>
-                    <div className="review-summary-row">
-                      <div className="review-summary-box">
-                        <strong>{publicReviewAverage}</strong>
-                        <span>Average Rating</span>
-                      </div>
-                      <div className="review-summary-box">
-                        <strong>{reviews.length}</strong>
-                        <span>Total Reviews</span>
-                      </div>
-                    </div>
-                    <div className="public-stars-display">
-                      {renderStars(Math.round(Number(publicReviewAverage) || 0))}
-                    </div>
-                  </article>
+              <div className="contact-submit-row">
+                <button type="submit" className="btn btn-gold">
+                  Submit Review
+                </button>
+              </div>
+            </form>
+          </div>
+        </article>
+      </div>
 
-                  <article className="contact-card reveal">
-                    <div className="contact-card-glow" />
-                    <div className="contact-inner">
-                      <span className="contact-label">Submit Review</span>
-                      <h3>Share Your Experience</h3>
-
-                      <form onSubmit={submitReview}>
-                        <input
-                          className="field"
-                          type="text"
-                          placeholder="Your Name"
-                          value={reviewForm.name}
-                          onChange={(e) =>
-                            setReviewForm((prev) => ({
-                              ...prev,
-                              name: e.target.value,
-                            }))
-                          }
-                        />
-
-                        <input
-                          className="field"
-                          type="text"
-                          placeholder="Course Name"
-                          value={reviewForm.course}
-                          onChange={(e) =>
-                            setReviewForm((prev) => ({
-                              ...prev,
-                              course: e.target.value,
-                            }))
-                          }
-                        />
-
-                        <div className="review-rating-wrap">
-                          <label className="review-label">
-                            Select Rating
-                          </label>
-                          <div className="rating-stars-row">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                className={`star-btn ${
-                                  Number(reviewForm.rating) >= star
-                                    ? "active"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  setReviewForm((prev) => ({
-                                    ...prev,
-                                    rating: star,
-                                  }))
-                                }
-                              >
-                                ★
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <textarea
-                          className="field textarea"
-                          placeholder="Write your review"
-                          value={reviewForm.review}
-                          onChange={(e) =>
-                            setReviewForm((prev) => ({
-                              ...prev,
-                              review: e.target.value,
-                            }))
-                          }
-                        />
-
-                        <div className="review-upload-wrap">
-                          <label className="review-label">
-                            Upload Student Image
-                          </label>
-                          <input
-                            className="field"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleReviewImageUpload}
-                          />
-                        </div>
-
-                        {reviewForm.image ? (
-                          <div className="review-preview-box">
-                            <img
-                              src={reviewForm.image}
-                              alt="Review Preview"
-                              className="review-preview-image"
-                            />
-                          </div>
-                        ) : null}
-
-                        <div className="contact-submit-row">
-                          <button type="submit" className="btn btn-gold">
-                            Submit Review
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </article>
-                </div>
-
-                <div className="course-grid" style={{ marginTop: "24px" }}>
-                  {reviewsLoading ? (
-                    <article className="glass-card content-card reveal">
-                      <h3>Loading reviews...</h3>
-                    </article>
-                  ) : reviews.length === 0 ? (
-                    <article className="glass-card content-card reveal">
-                      <h3>No reviews added yet</h3>
-                      <p>
-                        Be the first student to share a rating and review.
-                      </p>
-                    </article>
+      <div className="course-grid" style={{ marginTop: "24px" }}>
+        {reviewsLoading ? (
+          <article className="glass-card content-card reveal">
+            <h3>Loading reviews...</h3>
+          </article>
+        ) : reviews.length === 0 ? (
+          <article className="glass-card content-card reveal">
+            <h3>No reviews added yet</h3>
+            <p>Be the first student to share a rating and review.</p>
+          </article>
+        ) : (
+          reviews.map((item) => (
+            <article
+              className="review-card glass-card panel-tilt reveal"
+              key={item.id}
+            >
+              <div className="review-card-top">
+                <div className="review-avatar-wrap">
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="review-avatar"
+                    />
                   ) : (
-                    reviews.map((item) => (
-                      <article
-                        className="review-card glass-card panel-tilt reveal"
-                        key={item.id}
-                      >
-                        <div className="review-card-top">
-                          <div className="review-avatar-wrap">
-                            {item.image ? (
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="review-avatar"
-                              />
-                            ) : (
-                              <div className="review-avatar review-avatar-fallback">
-                                {String(item.name || "S").charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="review-head-content">
-                            <h3>{item.name}</h3>
-                            <div className="review-course">{item.course}</div>
-                            <div className="review-stars">
-                              {renderStars(item.rating)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="review-text">{item.review}</p>
-
-                        <div className="review-date">
-                          {item.createdAt ? formatDate(item.createdAt) : ""}
-                        </div>
-                      </article>
-                    ))
+                    <div className="review-avatar review-avatar-fallback">
+                      {String(item.name || "S").charAt(0).toUpperCase()}
+                    </div>
                   )}
                 </div>
-              </section>
-            </>
-          )}
+
+                <div className="review-head-content">
+                  <h3>{item.name}</h3>
+                  <div className="review-course">{item.course}</div>
+                  <div className="review-stars">
+                    {renderStars(item.rating)}
+                  </div>
+                </div>
+              </div>
+
+              <p className="review-text">{item.review}</p>
+
+              <div className="review-date">
+                {item.createdAt ? formatDate(item.createdAt) : ""}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  </>
+)}
 
           {activePage === "about" && (
             <section className="section reveal">
@@ -2055,6 +2372,140 @@ I want to know more about courses and admissions.`;
               </div>
             </section>
           )}
+
+{activePage === "artists" && (
+  <section className="section reveal">
+    <div className="section-head">
+      <span className="pill">Artists Booking</span>
+      <h2>Find & Book Live Artists</h2>
+      <p>
+        Discover singers, musicians, and live performers for cafés, private
+        parties, weddings, college events, and musical evenings.
+      </p>
+    </div>
+
+    <div className="grid-2">
+      <article className="glass-card content-card panel-tilt reveal">
+        <h3>For Cafés, Event Hosts & Venues</h3>
+        <p>
+          Explore artist profiles, view genres and performance types, and
+          directly contact the performer for bookings, live gigs, and events.
+        </p>
+
+        <div className="feature-grid" style={{ marginTop: "18px" }}>
+          <div className="feature-item">Café Gigs</div>
+          <div className="feature-item">Restaurant Live Nights</div>
+          <div className="feature-item">College Events</div>
+          <div className="feature-item">Private Parties</div>
+          <div className="feature-item">Wedding Performances</div>
+          <div className="feature-item">Corporate Shows</div>
+        </div>
+      </article>
+
+      <article className="glass-card content-card panel-tilt reveal">
+        <h3>For Artists</h3>
+        <p>
+          Artists can join this platform to showcase their work, performance
+          style, experience, and event availability so venues and organizers
+          can discover and book them.
+        </p>
+
+        <div className="button-row">
+  <button
+    type="button"
+    className="btn btn-gold"
+    onClick={() => setShowArtistForm(true)}
+  >
+    Join as Artist
+  </button>
+
+  <a
+    href={`https://wa.me/${academy.whatsapp}?text=${encodeURIComponent(
+      "Hello, I want to book an artist for a live event."
+    )}`}
+    target="_blank"
+    rel="noreferrer"
+    className="btn btn-glass"
+  >
+            Book an Artist
+          </a>
+        </div>
+      </article>
+    </div>
+
+    <div className="artists-grid" style={{ marginTop: "24px" }}>
+      {artists.map((artist) => (
+        <article className="artist-card reveal" key={artist.name}>
+          <div className="artist-card-image-wrap">
+            <img
+              src={artist.image}
+              alt={artist.name}
+              className="artist-card-image"
+            />
+          </div>
+
+          <div className="artist-card-content">
+            <span className="role-pill">{artist.role}</span>
+            <h3>{artist.name}</h3>
+
+            <div className="artist-meta">
+              <span>{artist.city}</span>
+              <span>{artist.price}</span>
+            </div>
+
+            <p className="artist-about">{artist.about}</p>
+
+            <div className="founder-tags" style={{ marginBottom: "14px" }}>
+              {artist.genres.map((genre) => (
+                <span key={genre}>{genre}</span>
+              ))}
+            </div>
+
+            <div className="artist-info-list">
+              <div>
+                <strong>Languages:</strong> {artist.languages.join(", ")}
+              </div>
+              <div>
+                <strong>Available For:</strong> {artist.eventTypes.join(", ")}
+              </div>
+            </div>
+
+            <div className="button-row" style={{ marginTop: "18px" }}>
+              <a
+                href={`https://wa.me/${artist.whatsapp}?text=${encodeURIComponent(
+                  `Hello ${artist.name}, I want to book you for an event.`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-gold small"
+              >
+                Book Now
+              </a>
+
+              <a
+                href={artist.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-glass small"
+              >
+                Instagram
+              </a>
+
+              <a
+                href={artist.youtube}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-glass small"
+              >
+                YouTube
+              </a>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
 
           {activePage === "contact" && (
             <section className="section reveal">
@@ -2631,6 +3082,168 @@ I want to know more about courses and admissions.`;
           )}
         </div>
       </main>
+
+{showArtistForm && (
+  <div className="artist-form-overlay">
+    <div className="artist-form-modal">
+      <div className="artist-form-head">
+        <div>
+          <span className="contact-label">Artist Registration</span>
+          <h3>Join as Artist</h3>
+        </div>
+
+        <button
+          type="button"
+          className="artist-form-close"
+          onClick={() => setShowArtistForm(false)}
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={submitArtistForm} className="artist-form-grid">
+        <input
+          className="field"
+          type="text"
+          name="name"
+          placeholder="Full Name *"
+          value={artistForm.name}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="stageName"
+          placeholder="Stage Name"
+          value={artistForm.stageName}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="phone"
+          placeholder="Phone Number *"
+          value={artistForm.phone}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={artistForm.email}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="city"
+          placeholder="City *"
+          value={artistForm.city}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="category"
+          placeholder="Category (Singer / Guitarist / Performer) *"
+          value={artistForm.category}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="genres"
+          placeholder="Genres (Bollywood, Sufi, Retro...)"
+          value={artistForm.genres}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="languages"
+          placeholder="Languages"
+          value={artistForm.languages}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="experience"
+          placeholder="Experience"
+          value={artistForm.experience}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="eventTypes"
+          placeholder="Available For (Café Gigs, Weddings...)"
+          value={artistForm.eventTypes}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="price"
+          placeholder="Starting Price"
+          value={artistForm.price}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="instagram"
+          placeholder="Instagram Link"
+          value={artistForm.instagram}
+          onChange={handleArtistFormChange}
+        />
+
+        <input
+          className="field"
+          type="text"
+          name="youtube"
+          placeholder="YouTube Link"
+          value={artistForm.youtube}
+          onChange={handleArtistFormChange}
+        />
+
+        <textarea
+          className="field textarea artist-form-about"
+          name="about"
+          placeholder="Tell us about yourself"
+          value={artistForm.about}
+          onChange={handleArtistFormChange}
+        />
+
+        <div className="artist-form-actions">
+          <button type="submit" className="btn btn-gold">
+            Submit Artist Form
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-glass"
+            onClick={() => setShowArtistForm(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {showSuccess && (
         <div className="success-popup">
